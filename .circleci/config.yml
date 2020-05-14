@@ -388,7 +388,7 @@ workflows:
               only:
                 - test
       - job_scansonar_in_test_environment:
-          context:SupportIntegration
+          context: SupportIntegration
           filters:
             branches:
               only:
