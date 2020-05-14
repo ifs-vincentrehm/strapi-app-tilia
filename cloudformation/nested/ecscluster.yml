@@ -1,0 +1,613 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: Strapi - ECS Cluster Stack
+
+Parameters:
+  # Global Variables
+  Environment:
+    Type: String
+  Application:
+    Type: String
+  VPCStackName:
+    Type: String
+  ECSHostSecurityGroup:
+    Type: String
+
+  # Specific Variables
+  InstanceType:
+    Description: Which instance type should we use to build the ECS cluster?
+    Type: String
+  MinClusterSize:
+    Description: How many members in cluster do u need (minimum) ?
+    Type: Number
+  DesiredClusterSize:
+    Description: How many members in cluster do u need (desired) ?
+    Type: Number
+  MaxClusterSize:
+    Description: How many members in cluster do u need (maximum) ?
+    Type: Number
+  ScalableMetricType:
+    Description: What kind of metric for the cluster scalability ?
+    Type: String
+  ScalableMetricThreshold:
+    Description: What is the value for threshold for the cluster scalability ?
+    Type: String
+  Cooldown:
+    Description: What is the value for the cooldown in scaling up or down ?
+    Type: String
+  DeploymentS3Bucket:
+    Description: Name of the s3 bucket where lifecycle Lambda functions are held
+    Type: String
+  LifecycleLaunchFunctionZip:
+    Description: S3 Key in the DeploymentS3Bucket bucket containing the Launch lifecycle
+      Lambda zip file.
+    Type: String
+  LifecycleTerminateFunctionZip:
+    Description: S3 Key in the DeploymentS3Bucket bucket containing the Terminate
+      lifecycle Lambda zip file.
+    Type: String
+  ECSAMI:
+    Description: AMI ID
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
+
+Resources:
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${AWS::StackName}-ECSCluster"
+
+  ECSEventContinueClusterDrain:
+    Properties:
+      Description: 'Invokes a Lambda Function to continue draining the ECS cluster
+        when our initial Lambda function has timed out '
+      EventPattern:
+        detail:
+          eventName:
+            - RecordLifecycleActionHeartbeat
+          eventSource:
+            - autoscaling.amazonaws.com
+          requestParameters:
+            autoScalingGroupName:
+              - !Ref ECSAutoScalingGroup
+            lifecycleHookName:
+              - !Ref ECSTerminationLifeCycleHook
+        detail-type:
+          - AWS API Call via CloudTrail
+        source:
+          - aws.autoscaling
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ECSLifecycleTerminateLambda.Arn
+          Id: !Join
+            - '-'
+            - - !Sub "${AWS::StackName}"
+              - Drain
+    Type: AWS::Events::Rule
+  
+  ECSEventContinueNewInstanceHealth:
+    Properties:
+      Description: 'Invokes a Lambda Function to check a newly launched instances
+        healt when our initial Lambda function has timed out '
+      EventPattern:
+        detail:
+          eventName:
+            - RecordLifecycleActionHeartbeat
+          eventSource:
+            - autoscaling.amazonaws.com
+          requestParameters:
+            autoScalingGroupName:
+              - !Ref ECSAutoScalingGroup
+            lifecycleHookName:
+              - !Ref ECSLaunchLifeCyclehook
+        detail-type:
+          - AWS API Call via CloudTrail
+        source:
+          - aws.autoscaling
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ECSLifecycleLaunchLambda.Arn
+          Id: !Join
+            - '-'
+            - - !Sub "${AWS::StackName}"
+              - Health
+    Type: AWS::Events::Rule
+ 
+  ECSEventInvokeClusterDrain:
+    Properties:
+      Description: Invokes a Lambda Function to handle draining the ECS cluster instance
+        upon termination
+      EventPattern:
+        detail:
+          AutoScalingGroupName:
+            - !Ref ECSAutoScalingGroup
+        detail-type:
+          - EC2 Instance-terminate Lifecycle Action
+        source:
+          - aws.autoscaling
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ECSLifecycleTerminateLambda.Arn
+          Id: !Join
+            - '-'
+            - - !Sub "${AWS::StackName}"
+              - Drain
+    Type: AWS::Events::Rule
+
+  ECSEventInvokeNewInstanceHealth:
+    Properties:
+      Description: Invokes a Lambda Function to check a newly launched instances health
+        during autoscaling
+      EventPattern:
+        detail:
+          AutoScalingGroupName:
+            - !Ref ECSAutoScalingGroup
+        detail-type:
+          - EC2 Instance-launch Lifecycle Action
+        source:
+          - aws.autoscaling
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ECSLifecycleLaunchLambda.Arn
+          Id: !Join
+            - '-'
+            - - !Sub "${AWS::StackName}"
+              - Health
+    Type: AWS::Events::Rule
+
+  ECSAutoScalingUp:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref ECSAutoScalingGroup
+      Cooldown: !Ref Cooldown
+      ScalingAdjustment: 1
+
+  ECSAutoScalingDown:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref ECSAutoScalingGroup
+      Cooldown: !Ref Cooldown
+      ScalingAdjustment: -1
+
+  ECSWAlarmHighMemoryReservation:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: 1
+      Statistic: Average
+      Threshold: !Ref ScalableMetricThreshold
+      AlarmDescription: Alarm if MemoryReservation is high
+      Period: 60
+      AlarmActions:
+      - !Ref ECSAutoScalingUp
+      Namespace: AWS/ECS
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref ECSAutoScalingGroup
+      ComparisonOperator: GreaterThanThreshold
+      MetricName: !Ref ScalableMetricType
+
+  ECSAlarmLowMemoryReservation:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: 1
+      Statistic: Average
+      Threshold: !Ref ScalableMetricThreshold
+      AlarmDescription: Alarm if MemoryReservation is low
+      Period: 60
+      AlarmActions:
+      - !Ref ECSAutoScalingDown
+      Namespace: AWS/ECS
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref ECSAutoScalingGroup
+      ComparisonOperator: LessThanThreshold
+      MetricName: !Ref ScalableMetricType
+
+  ECSAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        Fn::Split:
+        - ","
+        - Fn::ImportValue: !Sub "${VPCStackName}-PrivateSubnets"
+      LaunchConfigurationName: !Ref ECSLaunchConfiguration
+      MinSize: !Ref MinClusterSize
+      MaxSize: !Ref MaxClusterSize
+      DesiredCapacity: !Ref DesiredClusterSize
+      Tags:
+        -
+          Key: Name
+          Value: !Sub "${Environment} ECS Host"
+          PropagateAtLaunch: true
+        - Key: ApplyPatch
+          Value: 'true'
+          PropagateAtLaunch: true
+        - Key: UpdateSSMAgent
+          Value: 'true'
+          PropagateAtLaunch: true
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: 1
+        MaxBatchSize: 1
+        PauseTime: PT15M
+        SuspendProcesses:
+          - HealthCheck
+          - ReplaceUnhealthy
+          - AZRebalance
+          - AlarmNotification
+          - ScheduledActions
+        WaitOnResourceSignals: true
+
+  ECSLaunchConfiguration:
+      Type: AWS::AutoScaling::LaunchConfiguration
+      Properties:
+        ImageId: !Ref ECSAMI
+        InstanceType: !Ref InstanceType
+        SecurityGroups: 
+          - !Ref ECSHostSecurityGroup
+        IamInstanceProfile: !Ref ECSInstanceProfile
+        UserData:
+          "Fn::Base64": !Sub |
+              #!/bin/bash
+              yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+              yum install -y aws-cfn-bootstrap hibagent
+              /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
+              /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
+              /usr/bin/enable-ec2-spot-hibernation
+              echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+      Metadata:
+            AWS::CloudFormation::Init:
+                config:
+                    packages:
+                        yum:
+                            awslogs: []
+
+                    commands:
+                        01_add_instance_to_cluster:
+                            command: !Sub echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+                    files:
+                        "/etc/cfn/cfn-hup.conf":
+                            mode: 000400
+                            owner: root
+                            group: root
+                            content: !Sub |
+                                [main]
+                                stack=${AWS::StackId}
+                                region=${AWS::Region}
+                        "/etc/cfn/hooks.d/cfn-auto-reloader.conf":
+                            content: !Sub |
+                                [cfn-auto-reloader-hook]
+                                triggers=post.update
+                                path=Resources.ECSLaunchConfiguration.Metadata.AWS::CloudFormation::Init
+                                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
+                        "/etc/awslogs/awscli.conf":
+                            content: !Sub |
+                                [plugins]
+                                cwlogs = cwlogs
+                                [default]
+                                region = ${AWS::Region}
+                        "/etc/awslogs/awslogs.conf":
+                            content: !Sub |
+                                [general]
+                                state_file = /var/lib/awslogs/agent-state
+                                [/var/log/dmesg]
+                                file = /var/log/dmesg
+                                log_group_name = ${ECSCluster}-/var/log/dmesg
+                                log_stream_name = ${ECSCluster}
+                                [/var/log/messages]
+                                file = /var/log/messages
+                                log_group_name = ${ECSCluster}-/var/log/messages
+                                log_stream_name = ${ECSCluster}
+                                datetime_format = %b %d %H:%M:%S
+                                [/var/log/docker]
+                                file = /var/log/docker
+                                log_group_name = ${ECSCluster}-/var/log/docker
+                                log_stream_name = ${ECSCluster}
+                                datetime_format = %Y-%m-%dT%H:%M:%S.%f
+                                [/var/log/ecs/ecs-init.log]
+                                file = /var/log/ecs/ecs-init.log.*
+                                log_group_name = ${ECSCluster}-/var/log/ecs/ecs-init.log
+                                log_stream_name = ${ECSCluster}
+                                datetime_format = %Y-%m-%dT%H:%M:%SZ
+                                [/var/log/ecs/ecs-agent.log]
+                                file = /var/log/ecs/ecs-agent.log.*
+                                log_group_name = ${ECSCluster}-/var/log/ecs/ecs-agent.log
+                                log_stream_name = ${ECSCluster}
+                                datetime_format = %Y-%m-%dT%H:%M:%SZ
+                                [/var/log/ecs/audit.log]
+                                file = /var/log/ecs/audit.log.*
+                                log_group_name = ${ECSCluster}-/var/log/ecs/audit.log
+                                log_stream_name = ${ECSCluster}
+                                datetime_format = %Y-%m-%dT%H:%M:%SZ
+                    services:
+                        sysvinit:
+                            cfn-hup:
+                                enabled: true
+                                ensureRunning: true
+                                files:
+                                    - /etc/cfn/cfn-hup.conf
+                                    - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+                            awslogs:
+                                enabled: true
+                                ensureRunning: true
+                                files:
+                                    - /etc/awslogs/awslogs.conf
+                                    - /etc/awslogs/awscli.conf
+
+    # This IAM Role is attached to all of the ECS hosts. It is based on the default role
+    # published here:
+    # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/instance_IAM_role.html
+    #
+    # You can add other IAM policy statements here to allow access from your ECS hosts
+    # to other AWS services. Please note that this role will be used by ALL containers
+    # running on the ECS host.
+
+  ECSLaunchLifeCyclehook:
+    Properties:
+      AutoScalingGroupName: !Ref ECSAutoScalingGroup
+      DefaultResult: ABANDON
+      HeartbeatTimeout: 3600
+      LifecycleTransition: autoscaling:EC2_INSTANCE_LAUNCHING
+    Type: AWS::AutoScaling::LifecycleHook
+  ECSLifecycleLaunchLambda:
+    Properties:
+      Code:
+        S3Bucket: !Ref DeploymentS3Bucket
+        S3Key: !Ref LifecycleLaunchFunctionZip
+      Description: Confirms a newly launched instance has joined the ECS Cluster showing
+        connected and Active during Autoscaling operations
+      Handler: function.lambda_handler
+      MemorySize: 128
+      Role: !Join
+        - ''
+        - - 'arn:aws:iam::'
+          - !Ref 'AWS::AccountId'
+          - :role/
+          - !Ref ECSLambdaFunctionRole
+      Runtime: python2.7
+      Timeout: 300
+    Type: AWS::Lambda::Function
+  ECSLifecycleLaunchLambdaPermissionOne:
+    DependsOn: ECSLifecycleTerminateLambdaPermissionTwo
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ECSLifecycleLaunchLambda.Arn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ECSEventInvokeNewInstanceHealth.Arn
+    Type: AWS::Lambda::Permission
+  ECSLifecycleLauncheLambdaPermissionTwo:
+    DependsOn: ECSLifecycleLaunchLambdaPermissionOne
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ECSLifecycleLaunchLambda.Arn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ECSEventContinueNewInstanceHealth.Arn
+    Type: AWS::Lambda::Permission
+  ECSLifecycleTerminateLambda:
+    Properties:
+      Code:
+        S3Bucket: !Ref DeploymentS3Bucket
+        S3Key: !Ref LifecycleTerminateFunctionZip
+      Description: Manages draining ECS Cluster instances and cluster health checks
+        during Autoscaling operations
+      Handler: function.lambda_handler
+      MemorySize: 128
+      Role: !Join
+        - ''
+        - - 'arn:aws:iam::'
+          - !Ref 'AWS::AccountId'
+          - :role/
+          - !Ref ECSLambdaFunctionRole
+      Runtime: python2.7
+      Timeout: 300
+    Type: AWS::Lambda::Function
+  ECSLifecycleTerminateLambdaPermissionOne:
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ECSLifecycleTerminateLambda.Arn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ECSEventContinueClusterDrain.Arn
+    Type: AWS::Lambda::Permission
+  ECSLifecycleTerminateLambdaPermissionTwo:
+    DependsOn: ECSLifecycleTerminateLambdaPermissionOne
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ECSLifecycleTerminateLambda.Arn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ECSEventInvokeClusterDrain.Arn
+    Type: AWS::Lambda::Permission
+  ECSTerminationLifeCycleHook:
+    Properties:
+      AutoScalingGroupName: !Ref ECSAutoScalingGroup
+      DefaultResult: ABANDON
+      HeartbeatTimeout: 3600
+      LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
+    Type: AWS::AutoScaling::LifecycleHook
+  
+  ECSLambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: "Resource cannot be targeted since it is managed ones"
+          - id: W11
+            reason: "Resource cannot be targeted since it is managed ones"
+    Properties:
+      Path: /
+      RoleName: !Sub "${AWS::StackName}-LbdRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: "Allow"
+          Principal:
+            Service:
+              - "lambda.amazonaws.com"
+          Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSLambdaReadOnlyAccess
+      Policies:
+        -
+          PolicyName: "LambdaECSScaling"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "autoscaling:CompleteLifecycleAction"
+                - "autoscaling:DescribeScalingActivities"
+                - "autoscaling:RecordLifecycleActionHeartbeat"
+                - "ecs:UpdateContainerInstancesState"
+                - "ecs:Describe*"
+                - "ecs:List*"
+                - "ec2:Describe*"
+              Resource: "*"
+
+  ECSRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: "Resource cannot be targeted since it is managed ones"
+          - id: W11
+            reason: "Resource cannot be targeted since it is managed ones"
+    Properties:
+      Path: /
+      RoleName: !Sub "${AWS::StackName}-ECSRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: "Allow"
+          Principal:
+            Service:
+              - "ec2.amazonaws.com"
+          Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+      Policies:
+        -
+          PolicyName: "ecs-service"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "ecs:CreateCluster"
+                - "ecs:DeregisterContainerInstance"
+                - "ecs:DiscoverPollEndpoint"
+                - "ecs:Poll"
+                - "ecs:RegisterContainerInstance"
+                - "ecs:StartTelemetrySession"
+                - "ecs:Submit*"
+                - "logs:CreateLogStream"
+                - "logs:PutLogEvents"
+                - "ecr:BatchCheckLayerAvailability"
+                - "ecr:BatchGetImage"
+                - "ecr:GetDownloadUrlForLayer"
+                - "ecr:GetAuthorizationToken"
+                - "ssm:DescribeAssociation"
+                - "ssm:GetDeployablePatchSnapshotForInstance"
+                - "ssm:GetDocument"
+                - "ssm:GetManifest"
+                - "ssm:GetParameters"
+                - "ssm:ListAssociations"
+                - "ssm:ListInstanceAssociations"
+                - "ssm:PutInventory"
+                - "ssm:PutComplianceItems"
+                - "ssm:PutConfigurePackageResult"
+                - "ssm:UpdateAssociationStatus"
+                - "ssm:UpdateInstanceAssociationStatus"
+                - "ssm:UpdateInstanceInformation"
+                - "ec2messages:AcknowledgeMessage"
+                - "ec2messages:DeleteMessage"
+                - "ec2messages:FailMessage"
+                - "ec2messages:GetEndpoint"
+                - "ec2messages:GetMessages"
+                - "ec2messages:SendReply"
+                - "cloudwatch:PutMetricData"
+                - "ec2:DescribeInstanceStatus"
+                - "ec2:DescribeInstanceAttribute"
+                - "ds:CreateComputer"
+                - "ds:DescribeDirectories"
+                - "logs:CreateLogGroup"
+                - "logs:CreateLogStream"
+                - "logs:DescribeLogGroups"
+                - "logs:DescribeLogStreams"
+                - "logs:PutLogEvents"
+                - "s3:PutObject"
+                - "s3:GetObject"
+                - "s3:AbortMultipartUpload"
+                - "s3:ListMultipartUploadParts"
+                - "s3:ListBucket"
+                - "s3:ListBucketMultipartUploads"
+              Resource: "*"
+
+  ECSInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+          - !Ref ECSRole
+
+  ECSServiceAutoScalingRole:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: "Resource cannot be targeted since it is managed ones"
+          - id: W11
+            reason: "Resource cannot be targeted since it is managed ones"
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action:
+            - 'sts:AssumeRole'
+          Effect: Allow
+          Principal:
+            Service:
+              - application-autoscaling.amazonaws.com
+      Policies:
+        -
+          PolicyName: ecs-service-autoscaling
+          PolicyDocument:
+            Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "application-autoscaling:*"
+                - "cloudwatch:DescribeAlarms"
+                - "cloudwatch:PutMetricAlarm"
+                - "ecs:DescribeServices"
+                - "ecs:UpdateService"
+              Resource: "*"
+
+Outputs:
+
+  ClusterName:
+    Description: A reference to the ECS cluster
+    Value: !Ref ECSCluster
+
+  ClusterArn:
+    Description: A reference to the ECS cluster
+    Value: !GetAtt ECSCluster.Arn
+
+  ECSServiceAutoScalingRole:
+    Description: A reference to ECS service auto scaling role
+    Value: !GetAtt ECSServiceAutoScalingRole.Arn
+
+  ECSAutoScalingGroupName:
+    Description: A reference to ECS AutoScaling Group Name
+    Value: !Ref ECSAutoScalingGroup

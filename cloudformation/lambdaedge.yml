@@ -1,0 +1,220 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Wordpress - lambdaedge'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  ApplicationRegion:
+    Type: String
+  PasswordParameterName:
+    Type: String
+  UserParameterName:
+    Type: String
+  WhiteListIpParameterName:
+    Type: String
+
+Resources:
+
+  EdgeAuthExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+        - Effect: Allow
+          Principal:
+            Service:
+            - edgelambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: logs
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+      - PolicyName: ssm
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - ssm:GetParameters
+            Resource: !Sub "arn:aws:ssm:${ApplicationRegion}:${AWS::AccountId}:parameter/*"
+
+  EdgeAuthFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: !Sub |
+          'use strict';
+
+          function getSsmParameters(ssmInstance, params) {
+            return new Promise(function(resolve, reject) {
+              ssmInstance.getParameters(params, function(err, data) {
+                if (err !== null) {
+                  reject(err);
+                }
+                else {
+                  resolve(data);
+                }
+              });
+            });
+          }
+
+          const AWS = require('aws-sdk');
+          const awsConfig = {
+            region: '${ApplicationRegion}'
+          };
+          AWS.config.update(awsConfig);
+
+          exports.handler = (event, context, callback) => {
+            console.log(event);
+            console.log(context);
+            const request = event.Records[0].cf.request;
+            const headers = request.headers;
+            const IP = request.clientIp;
+            const ssm = new AWS.SSM();
+
+            var params = {
+              Names: [
+                '${UserParameterName}',
+                '${PasswordParameterName}',
+                '${WhiteListIpParameterName}'
+              ],
+              WithDecryption: false
+            };
+
+            console.log('reading ssm parameters');
+
+            getSsmParameters(ssm, params).then(data => {
+
+              const authUser= data.Parameters.filter(function(parameters) {
+                return parameters.Name === '${UserParameterName}';
+              })[0].Value;
+
+              const authPass= data.Parameters.filter(function(parameters) {
+                return parameters.Name === '${PasswordParameterName}';
+              })[0].Value;
+
+              const whiteListIp= data.Parameters.filter(function(parameters) {
+                return parameters.Name === '${WhiteListIpParameterName}';
+              })[0].Value;
+
+              const result = {
+                authPass: authPass,
+                whiteListIp: whiteListIp,
+                authUser: authUser
+              };
+
+              return result;
+
+            }, error => {
+              console.log(error, error.stack);
+            }).then(result => {
+
+              const authUser = result.authUser;
+              const authPass = result.authPass;
+              const whiteListIp = result.whiteListIp;
+
+              // Test if ip is authorized without authentication
+              if (whiteListIp.indexOf(IP) !== -1){
+                console.log('ip is authorized to connect without authentication');
+                callback(null, request);
+                return;
+              }
+
+              console.log('authentication is needed for this ip');
+              // Construct expected basic auth header value
+              const authString = 'Basic ' + new Buffer(authUser + ':' + authPass).toString('base64');
+              if (typeof headers.authorization == 'undefined' || headers.authorization[0].value != authString) {
+                console.log("authentication failed");
+                const body = 'Unauthorized';
+                const response = {
+                  status: '401',
+                  statusDescription: 'Unauthorized',
+                  body: body,
+                  headers: {
+                      'www-authenticate': [{key: 'WWW-Authenticate', value:'Basic'}]
+                  },
+                };
+                callback(null, response);
+                return;
+              }
+
+              // Continue request processing if authentication passed
+              console.log('authentication succeeded');
+              callback(null, request);
+
+            });
+          };
+      Handler: index.handler
+      Role: !GetAtt EdgeAuthExecutionRole.Arn
+      Runtime: nodejs12.x
+      Timeout: 5
+      MemorySize: 128
+
+  LambdaBasicAuthVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref EdgeAuthFunction
+
+  EdgeSecurityFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: !Sub |
+          'use strict';
+            exports.handler = (event, context, callback) => {
+
+              //Get contents of response
+              const response = event.Records[0].cf.response;
+              const headers = response.headers;
+
+              //Set new headers
+              headers['strict-transport-security'] = [{key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubdomains; preload'}];
+              //headers['content-security-policy'] = [{key: 'Content-Security-Policy', value: " default-src 'self'; font-src 'self'; media-src https://s3.${ApplicationRegion}.amazonaws.com; connect-src 'self' https://*.ifsalpha.com/ https://cognito-idp.${ApplicationRegion}.amazonaws.com/ https://s3.${ApplicationRegion}.amazonaws.com https://*.s3.${ApplicationRegion}.amazonaws.com; img-src 'self' data: https://s3.${ApplicationRegion}.amazonaws.com https://*.s3.${ApplicationRegion}.amazonaws.com http://* https://* ; script-src 'self'; style-src 'unsafe-inline'"}];
+              headers['x-content-type-options'] = [{key: 'X-Content-Type-Options', value: 'nosniff'}];
+              headers['x-frame-options'] = [{key: 'X-Frame-Options', value: 'SAMEORIGIN'}];
+              headers['x-xss-protection'] = [{key: 'X-XSS-Protection', value: '1; mode=block'}];
+              headers['referrer-policy'] = [{key: 'Referrer-Policy', value: 'same-origin'}]; 
+
+              //Return modified response
+              console.log(response)
+              callback(null, response);
+            };
+      Handler: index.handler
+      Role: !GetAtt EdgeAuthExecutionRole.Arn
+      Runtime: nodejs12.x
+      Timeout: 1
+      MemorySize: 128
+
+  LambdaSecurityVersion2:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref EdgeSecurityFunction
+      Description : 'WithoutCSP'
+
+Outputs:
+  LambdaBasicAuthVersion:
+    Value: !Ref LambdaBasicAuthVersion
+    Export:
+      Name: !Sub "${AWS::StackName}-LambdaBasicAuthVersion"
+
+  LambdaSecurityVersion2:
+    Value: !Ref LambdaSecurityVersion2
+    Export:
+      Name: !Sub "${AWS::StackName}-LambdaSecurityVersion2"
+
+

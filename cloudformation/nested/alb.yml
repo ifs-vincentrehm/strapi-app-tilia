@@ -1,0 +1,189 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Wordpress - Application Load Balancer Stack -'
+
+# ============================== Parameters ===========================#
+
+Parameters:
+  Environment:
+    Type: String
+  Application:
+    Type: String
+  VPCStackName:
+    Type: String
+  CloudFrontGlobalSecurityGroup:
+    Type: String
+  CloudFrontRegionGSecurityGroup:
+    Type: String
+  CertificateArn:
+    Type: String
+  ApplicationRegion:
+    Type: String
+  Domain:
+    Type: String
+  HostedZoneStackName:
+    Type: String
+  LoadbalancerHostedZoneID:
+    Type: String
+  AlbDomain:
+    Type: String
+
+
+
+# ============================== Resources ===========================#
+Resources:
+ 
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${Environment}-${Application}-ALB
+      Scheme: internet-facing
+      Subnets:
+        Fn::Split: 
+        - ","
+        - Fn::ImportValue: !Sub "${VPCStackName}-PublicSubnets"
+      SecurityGroups:
+        - !Ref CloudFrontGlobalSecurityGroup
+        - !Ref CloudFrontRegionGSecurityGroup
+
+  ApplicationLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      DefaultActions: 
+        - Type: forward
+          TargetGroupArn: !Ref DefaultTargetGroup
+      Certificates:
+        - CertificateArn:
+            Fn::ImportValue:
+              !Sub "${CertificateArn}-${AWS::Region}-CertificateArn"
+
+    
+  DefaultTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${Environment}-${Application}TargetGroup
+      VpcId: 
+        Fn::ImportValue: !Sub "${VPCStackName}-VPCID"
+      Port: 80
+      Protocol: HTTP
+#      TargetGroupAttributes:
+#        - Key: stickiness.enabled
+#          Value: true
+#        - Key: stickiness.type
+#          Value: lb_cookie
+#        - Key: stickiness.lb_cookie.duration_seconds
+#          Value: 86400
+
+  SecurityGroupExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: logs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+        - PolicyName: ssm
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ec2:DescribeSecurityGroups"
+                  - "sns:Subscribe"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "ec2:AuthorizeSecurityGroupIngress"
+                  - "ec2:RevokeSecurityGroupIngress"
+                Resource: !Sub "arn:aws:ec2:${ApplicationRegion}:${AWS::AccountId}:security-group/*"
+
+  LambdaInitSecurityGroup:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../src/init
+      Handler: init_security_groups.lambda_init_handler
+      Role: !GetAtt SecurityGroupExecutionRole.Arn
+      Runtime: python3.6
+      Timeout: 240
+      MemorySize: 1024
+
+  LambdaUpdateSecurityGroup:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../src
+      Handler: update_security_groups.lambda_handler
+      Role: !GetAtt SecurityGroupExecutionRole.Arn
+      Runtime: python3.6
+      Timeout: 240
+      MemorySize: 1024
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt
+        - LambdaUpdateSecurityGroup
+        - Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: sns.amazonaws.com
+      SourceAccount: "806199016981"
+      SourceArn: "arn:aws:sns:us-east-1:806199016981:AmazonIpSpaceChanged"
+
+  AmazonIpSpaceChangedSnsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt LambdaUpdateSecurityGroup.Arn
+      Protocol: lambda
+      TopicArn: "arn:aws:sns:us-east-1:806199016981:AmazonIpSpaceChanged"
+      Region: "us-east-1"
+
+  DNSRecorAlbSubDomain:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
+        HostedZoneId: !Ref LoadbalancerHostedZoneID
+      HostedZoneId:
+        Fn::ImportValue: !Sub "${HostedZoneStackName}-PublicZoneId"
+      Name: !Ref AlbDomain
+      Type: A
+
+
+Outputs:
+  LambdaUpdateSG:
+    Value: !GetAtt LambdaUpdateSecurityGroup.Arn
+
+  LambdaInitSG:
+    Value: !GetAtt LambdaInitSecurityGroup.Arn
+
+  ApplicationLoadBalancer:
+    Description: A reference to the Application Load Balancer
+    Value: !Ref ApplicationLoadBalancer
+
+  ApplicationLoadBalancerUrl:
+    Description: The URL of the ALB
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+
+  ListenerArn:
+    Description: A reference to a port 80 listener
+    Value: !Ref ApplicationLoadBalancerListener  
+

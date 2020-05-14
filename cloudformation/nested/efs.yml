@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Wordpress - EFS Stack -'
+Parameters:
+  Environment:
+    Type: String
+  Application:
+    Type: String
+  ECSHostSecurityGroup:
+    Type: String
+  VPCStackName:
+    Type: String
+
+Resources:
+  Key:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: key-default-1
+        Statement:
+          - Sid: Allow administration of the key
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::'
+                  - !Ref 'AWS::AccountId'
+                  - ':root'
+            Action:
+              - 'kms:*'
+            Resource: '*'
+
+  MountTargetSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: !Sub "${VPCStackName}-VPCID"
+      GroupDescription: Security group for mount target
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref ECSHostSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
+
+
+  FileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      KmsKeyId: !GetAtt
+        - Key
+        - Arn
+      FileSystemTags:
+        - Key: "EnableBackup"
+          Value: true
+
+  MountTarget1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId:
+        Ref: FileSystem
+      SecurityGroups:
+        - Ref: MountTargetSecurityGroup
+      SubnetId:
+        Fn::ImportValue: !Sub "${VPCStackName}-DataSubneta"
+
+
+  MountTarget2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId:
+        Ref: FileSystem
+      SecurityGroups:
+        - Ref: MountTargetSecurityGroup
+      SubnetId:
+        Fn::ImportValue: !Sub "${VPCStackName}-DataSubnetb"
+
+
+
+   
+Outputs:
+  KmsKeyId:
+    Value: !GetAtt
+      - Key
+      - Arn
+
+  EfsId:
+    Value: !Ref FileSystem
+

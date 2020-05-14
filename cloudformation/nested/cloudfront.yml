@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Wordpress - CloudFront Stack -'
+
+Parameters:
+  VPCStackName:
+    Type: String
+  HostedZoneStackName:
+    Type: String
+  Environment:
+    Type: String
+  Application:
+    Type: String
+  AliasTargetHostedZoneId:
+    Type: String
+    Default: Z2FDTNDATAQYW2
+  Domain:
+    Type: String
+  USCertificateArn:
+    Description: the ARN of the AWS Certificate.
+    Type: String
+  ApplicationLoadBalancerUrl:
+    Type: String
+  UseBasicAuth:
+    Type: String
+    Default: "no"
+    AllowedValues:
+      - "yes"
+      - "no"
+  LambdaBasicAuthVersion:
+    Type: String
+  LambdaSecurityVersion:
+    Type: String
+
+Conditions:
+  UseBasicAuth: !Equals [!Ref UseBasicAuth, "yes"]
+
+Resources:
+  myDistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !Ref ApplicationLoadBalancerUrl
+            Id: myCustomOrigin
+            CustomOriginConfig:
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+        Enabled: true
+        Comment: Wordpress CLOUDFRONT
+        DefaultRootObject: ''
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - GET
+          - HEAD
+          - OPTIONS
+          - POST
+          - DELETE
+          - PATCH
+          - PUT
+          Compress: true
+          LambdaFunctionAssociations:
+            - Fn::If: [UseBasicAuth, {EventType: 'viewer-request', LambdaFunctionARN: !Ref LambdaBasicAuthVersion }, !Ref "AWS::NoValue"]
+            - EventType: 'origin-response'
+              LambdaFunctionARN: !Ref LambdaSecurityVersion
+          TargetOriginId: myCustomOrigin
+          SmoothStreaming: false
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: all
+            Headers:
+              - '*'
+          DefaultTTL: 0
+          MaxTTL: 0
+          MinTTL: 0
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn: !Ref USCertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.1_2016
+        HttpVersion: http2
+        Aliases:
+          - Fn::Join:
+              - '.'
+              - - '*'
+
+                - !Ref Domain
+          - !Ref Domain
+
+
+  DNSRecordMain:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName:
+          Fn::Join:
+            - ''
+            - - Fn::GetAtt:
+                  - myDistribution
+                  - DomainName
+        EvaluateTargetHealth: False
+        HostedZoneId: !Ref AliasTargetHostedZoneId
+      HostedZoneId:
+        Fn::ImportValue: !Sub "${HostedZoneStackName}-PublicZoneId"
+      Name:
+        !Ref Domain
+      Type: A
+
+
+  DNSRecorSubDomain:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName:
+          Fn::Join:
+            - ''
+            - - Fn::GetAtt:
+                  - myDistribution
+                  - DomainName
+        EvaluateTargetHealth: False
+        HostedZoneId: !Ref AliasTargetHostedZoneId
+      HostedZoneId:
+        Fn::ImportValue: !Sub "${HostedZoneStackName}-PublicZoneId"
+      Name:
+        Fn::Join:
+          - "."
+          - - '*'
+            - !Ref Domain
+      Type: A

@@ -1,0 +1,287 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Wordpress - Master
+Parameters:
+  CertificateArn:
+    Type: String
+  USCertificateArn:
+    Type: String
+  Domain:
+    Type: String
+    Default: Z2FDTNDATAQYW2
+  Environment:
+    Type: String
+  Application:
+    Type: String
+  VPCStackName:
+    Type: String
+  InstanceType:
+    Type: String
+  HostedZoneStackName:
+    Type: String
+  DBPort:
+    Type: String
+  DBType:
+    Type: String
+  DBVersion:
+    Type: String
+  DBInstanceClass:
+    Type: String
+  DBAllocatedStorage:
+    Type: String
+  DBName:
+    Type: String
+  DBUsername:
+    Type: String
+  DBUserPassword:
+    Type: String
+  DBBackupRetentionPeriod:
+    Type: String
+  DBStorageEncryption:
+    Type: String
+  AWSServiceRoleForRDSArn:
+    Type: String
+  Cooldown:
+    Type: String
+  ScalableMetricThreshold:
+   Type: String
+  ScalableMetricType:
+    Type: String
+  MaxClusterSize:
+    Type: String
+  DesiredClusterSize:
+    Type: String
+  MinClusterSize:
+    Type: String
+  LambdaBasicAuthVersion:
+    Type: String
+  LambdaSecurityVersion:
+    Type: String
+  UseBasicAuth:
+    Type: String
+  DeploymentS3Bucket:
+    Type: String
+  LifecycleLaunchFunctionZip:
+    Description: S3 Key in the DeploymentS3Bucket bucket containing the Launch lifecycle
+      Lambda zip file.
+    Type: String
+  LifecycleTerminateFunctionZip:
+    Description: S3 Key in the DeploymentS3Bucket bucket containing the Terminate
+      lifecycle Lambda zip file.
+    Type: String
+  URIDockerImage:
+    Type: String
+  URIRollbackDockerImage:
+    Type: String
+  LBPriority:
+    Type: String
+  ScaleOutCooldown:
+    Type: String
+  MaxInstanceCount:
+    Type: String
+  ScaleTriggerType:
+    Type: String
+  ScaleTriggerThreshold:
+    Type: String
+  ScaleInCooldown:
+    Type: String
+  MinInstanceCount:
+    Type: String
+  DesiredInstanceCount:
+    Type: String
+  ApplicationRegion:
+    Type: String
+  LoadbalancerHostedZoneID:
+    Type: String
+  AlbDomain:
+    Type: String
+
+  # WpEndPoint:
+  #   Type: String
+  # WpAdminMail:
+  #   Type: String
+  # WpAdminPwd:
+  #   Type: String
+
+Resources:
+
+  ALBStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref Environment ,'-', !Ref Application, '-nestedtemplates/' ,'out-alb.yml' ]]
+      Parameters:
+        Environment: !Ref Environment
+        Application: !Ref Application
+        VPCStackName: !Ref VPCStackName
+        CertificateArn: !Ref CertificateArn
+        CloudFrontGlobalSecurityGroup: !GetAtt SGStack.Outputs.CloudFrontGlobalSecurityGroup
+        CloudFrontRegionGSecurityGroup: !GetAtt SGStack.Outputs.CloudFrontRegionGSecurityGroup
+        ApplicationRegion: !Ref ApplicationRegion
+        Domain: !Ref Domain
+        HostedZoneStackName: !Ref HostedZoneStackName
+        LoadbalancerHostedZoneID: !Ref LoadbalancerHostedZoneID
+        AlbDomain: !Ref AlbDomain
+
+  SGStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref Environment ,'-', !Ref Application, '-nestedtemplates/' ,'securitygroups.yml' ]]
+      Parameters:
+        Environment: !Ref Environment
+        Application: !Ref Application
+        VPCStackName: !Ref VPCStackName
+
+
+  # EFSStack:
+  #   Type: "AWS::CloudFormation::Stack"
+  #   Properties:
+  #     TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref Environment ,'-', !Ref Application, '-nestedtemplates/' ,'efs.yml' ]]
+  #     Parameters:
+  #       Environment: !Ref Environment
+  #       Application: !Ref Application
+  #       VPCStackName: !Ref VPCStackName
+  #       ECSHostSecurityGroup: !GetAtt SGStack.Outputs.ECSHostSecurityGroup
+
+
+  CFStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref Environment ,'-', !Ref Application, '-nestedtemplates/' ,'cloudfront.yml' ]]
+      Parameters:
+        Environment: !Ref Environment
+        Application: !Ref Application
+        VPCStackName: !Ref VPCStackName
+        USCertificateArn: !Ref USCertificateArn
+        HostedZoneStackName: !Ref HostedZoneStackName
+        Domain: !Ref Domain
+        ApplicationLoadBalancerUrl : !GetAtt ALBStack.Outputs.ApplicationLoadBalancerUrl
+        UseBasicAuth : !Ref UseBasicAuth
+        LambdaBasicAuthVersion: !Ref LambdaBasicAuthVersion
+        LambdaSecurityVersion: !Ref LambdaSecurityVersion
+
+
+
+  ECSClusterStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref Environment ,'-', !Ref Application, '-nestedtemplates/' ,'ecscluster.yml' ]]
+      Parameters:
+        Environment: !Ref Environment
+        Application: !Ref Application
+        VPCStackName: !Ref VPCStackName
+        ECSHostSecurityGroup: !GetAtt SGStack.Outputs.ECSHostSecurityGroup
+        InstanceType: !Ref InstanceType
+        MinClusterSize: !Ref MinClusterSize
+        DesiredClusterSize: !Ref DesiredClusterSize
+        MaxClusterSize: !Ref MaxClusterSize
+        ScalableMetricType: !Ref ScalableMetricType
+        ScalableMetricThreshold: !Ref ScalableMetricThreshold
+        Cooldown: !Ref Cooldown
+        LifecycleLaunchFunctionZip: !Ref LifecycleLaunchFunctionZip
+        LifecycleTerminateFunctionZip: !Ref LifecycleTerminateFunctionZip
+        DeploymentS3Bucket: !Ref DeploymentS3Bucket
+
+  RDSStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref Environment ,'-', !Ref Application, '-nestedtemplates/' ,'rds.yml' ]]
+      Parameters:
+        Environment: !Ref Environment
+        Application: !Ref Application
+        VPCStackName: !Ref VPCStackName
+        ECSHostSecurityGroup: !GetAtt SGStack.Outputs.ECSHostSecurityGroup
+        DBPort: !Ref DBPort
+        DBType: !Ref DBType
+        DBVersion: !Ref DBVersion
+        DBInstanceClass: !Ref DBInstanceClass
+        DBAllocatedStorage: !Ref DBAllocatedStorage
+        DBName: !Ref DBName
+        DBUsername: !Ref DBUsername
+        DBUserPassword: !Ref DBUserPassword
+        DBBackupRetentionPeriod: !Ref DBBackupRetentionPeriod
+        DBStorageEncryption: !Ref DBStorageEncryption
+        AWSServiceRoleForRDSArn: !Ref AWSServiceRoleForRDSArn
+
+  StrapiStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref Environment ,'-', !Ref Application, '-nestedtemplates/' ,'service.yml' ]]
+      Parameters:
+        Environment: !Ref Environment
+        Application: !Ref Application
+        VPCStackName: !Ref VPCStackName
+        ECSHostSecurityGroup: !GetAtt SGStack.Outputs.ECSHostSecurityGroup
+        ClusterName: !GetAtt ECSClusterStack.Outputs.ClusterName
+        ListenerArn: !GetAtt ALBStack.Outputs.ListenerArn
+        EfsId: !GetAtt EFSStack.Outputs.EfsId
+        InstanceRDSHostname: !GetAtt RDSStack.Outputs.InstanceRDSHostname
+        InstanceRDSPort: !GetAtt RDSStack.Outputs.InstanceRDSPort
+        DBName: !Ref DBName
+        DBUsername: !Ref DBUsername
+        DBUserPassword: !Ref DBUserPassword
+        URIDockerImage: !Ref URIDockerImage
+        URIRollbackDockerImage: !Ref URIRollbackDockerImage
+        LBPriority: !Ref LBPriority
+        ScaleOutCooldown: !Ref ScaleOutCooldown
+        MaxInstanceCount: !Ref MaxInstanceCount
+        ScaleTriggerType: !Ref ScaleTriggerType
+        ScaleTriggerThreshold: !Ref ScaleTriggerThreshold
+        ScaleInCooldown: !Ref ScaleInCooldown
+        MinInstanceCount: !Ref MinInstanceCount
+        DesiredInstanceCount: !Ref DesiredInstanceCount
+        # WpEndPoint:  !Ref WpEndPoint
+        # WpAdminMail: !Ref WpAdminMail
+        # WpAdminPwd: !Ref WpAdminPwd
+
+Outputs:
+  ECSHostSecurityGroup:
+    Description: A reference to the security group for ECS hosts
+    Value: !GetAtt SGStack.Outputs.ECSHostSecurityGroup
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-ECSHostSecurityGroup"
+  ListenerArn:
+    Description: Alb listener ARN
+    Value: !GetAtt ALBStack.Outputs.ListenerArn
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-ListenerArn"
+  ClusterArn:
+    Description: Cluster Name
+    Value: !GetAtt ECSClusterStack.Outputs.ClusterArn
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-ClusterArn"
+  ClusterName:
+    Description: Cluster arn
+    Value: !GetAtt ECSClusterStack.Outputs.ClusterName
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-ClusterName"
+  # EfsId:
+  #   Description: EFS id
+  #   Value: !GetAtt EFSStack.Outputs.EfsId
+  #   Export:
+  #     Name:
+  #       Fn::Sub: "${AWS::StackName}-EfsId"
+  InstanceRDSHostname:
+    Value: !GetAtt RDSStack.Outputs.InstanceRDSHostname
+    Export:
+      Name: !Sub "${AWS::StackName}-InstanceRDSHostname"
+  InstanceRDSPort:
+    Value: !GetAtt RDSStack.Outputs.InstanceRDSPort
+    Export:
+      Name: !Sub "${AWS::StackName}-InstanceRDSPort"
+  LambdaUpdateSG:
+    Value: !GetAtt ALBStack.Outputs.LambdaUpdateSG
+    Export:
+      Name: !Sub "${AWS::StackName}-LambdaUpdateSG"
+  LambdaInitSG:
+    Value: !GetAtt ALBStack.Outputs.LambdaInitSG
+    Export:
+      Name: !Sub "${AWS::StackName}-LambdaInitSG"
+  TaskArn:
+    Description: ARN of the task
+    Value: !GetAtt StrapiStack.Outputs.TaskArn
+    Export:
+      Name: !Sub "${AWS::StackName}-TaskDefinitionArn"

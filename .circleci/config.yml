@@ -1,0 +1,612 @@
+version: 2.1
+
+orbs:
+  utils-orb: bivwak/utils-orb@0.0.6
+
+references:
+
+  awsclimaven_image: &awsclimaven_image
+    docker:
+      - image: pcisupport/ci-awscli-java-mvn-sonarscanner:1.0
+    working_directory: ~/workspace
+
+  awsclisonar_image: &awsclisonar_image
+    docker:
+      - image: pcisupport/ci-awscli-java-mvn-sonarscanner:1.0
+    working_directory: ~/workspace
+
+  katalon_image: &katalon_image
+    docker:
+      - image: pcisupport/ci-katalon-new:latest
+    working_directory: ~/workspace
+
+  python_image: &python_image
+    docker:
+      - image: circleci/python:3.6.4
+    working_directory: ~/workspace
+
+  run_initenv: &run_initenv
+    run:
+      name: Init environment
+      command: |
+        bash ./scripts/init_env.sh ${CONF_ENV}
+      no_output_timeout: 5m
+
+  run_checkprerequesite: &run_checkprerequesite
+    run:
+      name: Check prerequesite
+      command: |
+        bash ./scripts/check_prerequesite.sh
+      no_output_timeout: 45m
+
+  run_cfnlint: &run_cfnlint
+    run:
+      name: Scan cloudformation
+      command: |
+        bash ./scripts/scan_cloudformation.sh
+      no_output_timeout: 45m
+
+  run_deployaws: &run_deployaws
+    run:
+      name: Deploy aws
+      command: |
+        bash ./scripts/run_deployaws.sh
+      no_output_timeout: 45m
+
+  scan_sonar: &scan_sonar
+    run:
+      name: SonarQube Execution
+      command: |
+        mvn clean -q package
+        bash ./scripts/scan_sonar.sh
+      no_output_timeout: 45m
+
+  run_test_nonregression_light: &run_test_nonregression_light
+    run:
+      name: light non regression tests
+      command: |
+        bash ./scripts/run_test_nonregression_light.sh
+      no_output_timeout: 45m
+
+  run_test_nonregression_full: &run_test_nonregression_full
+    run:
+      name: Full non regression tests
+      command: |
+        bash ./scripts/run_test_nonregression_full.sh
+      no_output_timeout: 45m
+
+  run_test_unitary: &run_test_unitary
+    run:
+      name: Unitary tests
+      command: |
+        bash ./scripts/run_test_unitary.sh
+      no_output_timeout: 45m
+
+  run_test_healthcheck: &run_test_healthcheck
+    run:
+      name: Health checks
+      command: |
+        bash ./scripts/run_test_healthcheck.sh
+      no_output_timeout: 45m
+
+  check_qualitygates: &check_qualitygates
+    run:
+      name: Quality Gates Checks
+      command: |
+        bash ./scripts/check_qualitygates.sh
+      no_output_timeout: 45m
+
+  run_performancetests: &run_performancetests
+    run:
+      name: Performance tests
+      command: |
+        bash ./scripts/run_test_performance.sh
+      no_output_timeout: 45m
+
+  run_securitytests: &run_securitytests
+    run:
+      name: Security tests
+      command: |
+        bash ./scripts/run_test_security.sh
+      no_output_timeout: 45m
+
+  run_pentests: &run_pentests
+    run:
+      name: Performance tests
+      command: |
+        bash ./scripts/run_test_pen.sh
+      no_output_timeout: 45m
+
+  add_ssh_key: &add_ssh_key
+    add_ssh_keys:
+      fingerprints:
+        - "45:89:6f:e3:10:f4:58:86:b5:a8:f3:1e:a3:07:5f:15"
+
+jobs:
+
+  job_deploy_in_dev_environment:
+    <<: *awsclimaven_image
+    environment:
+      CONF_ENV: develop
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_checkprerequesite
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - *run_deployaws
+
+  job_deploy_in_test_environment:
+    <<: *awsclimaven_image
+    environment:
+      CONF_ENV: test
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_checkprerequesite
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - *run_deployaws
+
+  job_deploy_in_staging_environment:
+    <<: *awsclimaven_image
+    environment:
+      CONF_ENV: staging
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_checkprerequesite
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - *run_deployaws
+
+  job_deploy_in_release_environment:
+    <<: *awsclimaven_image
+    environment:
+      CONF_ENV: release
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_checkprerequesite
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - *run_deployaws
+
+  job_deploy_in_sandbox_environment:
+    <<: *awsclimaven_image
+    environment:
+      CONF_ENV: sandbox
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_checkprerequesite
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - *run_deployaws
+
+  job_scancloudformation_in_dev_environment:
+    <<: *python_image
+    environment:
+      CONF_ENV: develop
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_cfnlint
+
+  job_scancloudformation_in_test_environment:
+    <<: *python_image
+    environment:
+      CONF_ENV: test
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_cfnlint
+
+  job_scancloudformation_in_staging_environment:
+    <<: *python_image
+    environment:
+      CONF_ENV: staging
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_cfnlint
+
+  job_unitarytest_in_dev_environment:
+    <<: *awsclimaven_image
+    environment:
+      CONF_ENV: develop
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_test_unitary
+
+  job_unitarytest_in_test_environment:
+    <<: *awsclimaven_image
+    environment:
+      CONF_ENV: test
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_test_unitary
+
+  job_unitarytest_in_staging_environment:
+    <<: *awsclimaven_image
+    environment:
+      CONF_ENV: staging
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_test_unitary
+
+  job_healthchecktest_in_dev_environment:
+    <<: *python_image
+    environment:
+      CONF_ENV: develop
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_test_healthcheck
+
+  job_healthchecktest_in_test_environment:
+    <<: *python_image
+    environment:
+      CONF_ENV: test
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_test_healthcheck
+
+  job_healthchecktest_in_staging_environment:
+    <<: *python_image
+    environment:
+      CONF_ENV: staging
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_test_healthcheck
+
+  job_healthchecktest_in_release_environment:
+    <<: *python_image
+    environment:
+      CONF_ENV: release
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_test_healthcheck
+
+  job_healthchecktest_in_sandbox_environment:
+    <<: *python_image
+    environment:
+      CONF_ENV: sandbox
+    steps:
+      - checkout
+      - *run_initenv
+      - *run_test_healthcheck
+
+  job_nrlighttest_in_dev_environment:
+    <<: *katalon_image
+    environment:
+      CONF_ENV: develop
+    steps:
+      - checkout
+      - *add_ssh_key
+      - *run_initenv
+      - *run_test_nonregression_light
+      - store_test_results:
+          path: ~/workspace/report
+      - store_artifacts:
+          path: ~/workspace/report
+
+  job_nrlighttest_in_test_environment:
+    <<: *katalon_image
+    environment:
+      CONF_ENV: test
+    steps:
+      - checkout
+      - *add_ssh_key
+      - *run_initenv
+      - *run_test_nonregression_light
+      - store_test_results:
+          path: ~/workspace/report
+      - store_artifacts:
+          path: ~/workspace/report
+
+  job_nrfulltest_in_staging_environment:
+    <<: *katalon_image
+    environment:
+      CONF_ENV: staging
+    steps:
+      - checkout
+      - *add_ssh_key
+      - *run_initenv
+      - *run_test_nonregression_full
+      - store_test_results:
+          path: ~/workspace/report
+      - store_artifacts:
+          path: ~/workspace/report
+
+  job_scansonar_in_dev_environment:
+    <<: *awsclisonar_image
+    environment:
+      CONF_ENV: develop
+    steps:
+      - checkout
+      - *run_initenv
+      - *scan_sonar
+
+  job_scansonar_in_test_environment:
+    <<: *awsclisonar_image
+    environment:
+      CONF_ENV: test
+    steps:
+      - checkout
+      - *run_initenv
+      - *scan_sonar
+
+  job_scansonar_in_staging_environment:
+    <<: *awsclisonar_image
+    environment:
+      CONF_ENV: staging
+    steps:
+      - checkout
+      - *run_initenv
+      - *scan_sonar
+
+  job_performancetests_in_staging_environment:
+    <<: *python_image
+    environment:
+      CONF_ENV: staging
+    steps:
+      - checkout
+      - *run_performancetests
+
+  job_securitytests_in_staging_environment:
+    <<: *python_image
+    environment:
+      CONF_ENV: staging
+    steps:
+      - checkout
+      - *run_securitytests
+
+  job_pentests_in_staging_environment:
+    <<: *python_image
+    environment:
+      CONF_ENV: staging
+    steps:
+      - checkout
+      - *run_pentests
+
+workflows:
+  version: 2
+
+  workflow_build_test:
+    jobs:
+      - job_scancloudformation_in_test_environment:
+          context: Colivme-int
+          filters:
+            branches:
+              only:
+                - test
+      - job_scansonar_in_test_environment:
+          context: Colivme-int
+          filters:
+            branches:
+              only:
+                - test
+      - job_unitarytest_in_test_environment:
+          context: Colivme-int
+          filters:
+            branches:
+              only:
+                - test
+      - job_deploy_in_test_environment:
+          context: Colivme-int
+
+          requires:
+            - job_scancloudformation_in_test_environment
+            - job_scansonar_in_test_environment
+            - job_unitarytest_in_test_environment
+          filters:
+            branches:
+              only:
+                - test
+      - job_nrlighttest_in_test_environment:
+          context: Colivme-int
+          requires:
+            - job_deploy_in_test_environment
+          filters:
+            branches:
+              only:
+                - test
+      - job_healthchecktest_in_test_environment:
+          context: Colivme-int
+          requires:
+            - job_nrlighttest_in_test_environment
+          filters:
+            branches:
+              only:
+                - test
+      - utils-orb/workflow_collector:
+          project-name: "colivme"
+          context: pipeline-analytics-release
+          filters:
+            branches:
+              only:
+              - test
+
+  workflow_build_develop:
+    jobs:
+      - job_scancloudformation_in_dev_environment:
+          context: Colivme-int
+          filters:
+            branches:
+              only:
+                - develop
+      - job_scansonar_in_dev_environment:
+          context: Colivme-int
+          filters:
+            branches:
+              only:
+                - develop
+      - job_unitarytest_in_dev_environment:
+          context: Colivme-int
+          filters:
+            branches:
+              only:
+                - develop
+      - job_deploy_in_dev_environment:
+          context: Colivme-int
+
+          requires:
+            - job_scancloudformation_in_dev_environment
+            - job_scansonar_in_dev_environment
+            - job_unitarytest_in_dev_environment
+          filters:
+            branches:
+              only:
+                - develop
+      - job_nrlighttest_in_dev_environment:
+          context: Colivme-int
+          requires:
+            - job_deploy_in_dev_environment
+          filters:
+            branches:
+              only:
+                - develop
+      - utils-orb/workflow_collector:
+          project-name: "colivme"
+          context: pipeline-analytics-release
+          filters:
+            branches:
+              only:
+              - develop
+
+  workflow_build_release:
+    jobs:
+      - job_scancloudformation_in_staging_environment:
+          context: Colivme-cdd
+          filters:
+            branches:
+              only:
+                - master
+      - job_scansonar_in_staging_environment:
+          context: Colivme-cdd
+          filters:
+            branches:
+              only:
+                - master
+      - job_unitarytest_in_staging_environment:
+          context: Colivme-cdd
+          filters:
+            branches:
+              only:
+                - master
+      - job_deploy_in_staging_environment:
+          context: Colivme-cdd
+          requires:
+            - job_scancloudformation_in_staging_environment
+            - job_scansonar_in_staging_environment
+            - job_unitarytest_in_staging_environment
+          filters:
+            branches:
+              only:
+                - master
+      - job_nrfulltest_in_staging_environment:
+          context: Colivme-cdd
+          requires:
+            - job_deploy_in_staging_environment
+          filters:
+            branches:
+              only:
+                - master
+      - request_merge_to_prod:
+          type: approval
+          requires:
+            - job_nrfulltest_in_staging_environment
+            - job_deploy_in_staging_environment
+          filters:
+            branches:
+              only:
+                - master
+      #    - job_healthchecktest_in_staging_environment:
+      #        context : ReferenceArchitecturesCandidate
+      #        requires:
+      #        - job_nrfulltest_in_staging_environment
+      #        filters:
+      #          branches:
+      #            only:
+      #            - master
+      #    - job_qualitygates_in_staging_environment:
+      #        context : ReferenceArchitecturesCandidate
+      #        requires:
+      #        - job_healthchecktest_in_staging_environment
+      #        filters:
+      #          branches:
+      #            only:
+      #            - master
+      - job_deploy_in_release_environment:
+          context: Colivme-rls
+          requires:
+            - request_merge_to_prod
+          filters:
+            branches:
+              only:
+                - master
+      - job_deploy_in_sandbox_environment:
+          context: Colivme-sbx
+          requires:
+            - request_merge_to_prod
+          filters:
+            branches:
+              only:
+                - master
+      - utils-orb/workflow_collector:
+          project-name: "colivme"
+          context: pipeline-analytics-release
+          filters:
+            branches:
+              only:
+              - master
+#    - job_healthchecktest_in_release_environment:
+#        context : ReferenceArchitecturesRelease
+#        requires:
+#        - job_deploy_in_release_environment
+#        filters:
+#          branches:
+#            only:
+#            - master
+#    - job_deploy_in_sandbox_environment:
+#        context : ReferenceArchitecturesSandbox
+#        requires:
+#        - job_qualitygates_in_staging_environment
+#        filters:
+#          branches:
+#            only:
+#            - master
+#    - job_healthchecktest_in_sandbox_environment:
+#        context : ReferenceArchitecturesSandbox
+#        requires:
+#        - job_deploy_in_sandbox_environment
+#        filters:
+#          branches:
+#            only:
+#            - master
+#  nightly:
+#    triggers:
+#      - schedule:
+#          cron: "0 2 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
+#    jobs:
+#    - job_securitytests_in_staging_environment:
+#        context : ReferenceArchitecturesCandidate
+#    - job_pentests_in_staging_environment:
+#        context : ReferenceArchitecturesCandidate
+#        requires:
+#        - job_securitytests_in_staging_environment
+#    - job_performancetests_in_staging_environment:
+#        context : ReferenceArchitecturesCandidate
+#        requires:
+#        - job_pentests_in_staging_environment

@@ -1,0 +1,133 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Wordpress - Security Groups Stack -'
+Parameters:
+  Environment:
+    Type: String
+  Application:
+    Type: String
+  VPCStackName:
+    Type: String
+
+Resources:
+  # This security group defines who is allowed to access the ECS hosts directly.
+  # By default we're just allowing access from the load balancer.  If you want to SSH 
+  # into the hosts, or expose non-load balanced services you can open their ports here.
+  ECSHostSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      VpcId: 
+        Fn::ImportValue: !Sub "${VPCStackName}-VPCID"
+      GroupDescription: Access to the ECS hosts and the tasks/containers that run on them
+      Tags: 
+        - 
+          Key: Name
+          Value: !Sub ${Environment}-ECSHosts
+
+  ECSHostSecurityGroupIngressCFG:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ECSHostSecurityGroup
+      SourceSecurityGroupId: !Ref CloudFrontGlobal443SecurityGroup
+      IpProtocol: 'tcp'
+      FromPort: 0
+      ToPort: 65535
+
+  ECSHostSecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref ECSHostSecurityGroup
+      CidrIp: "0.0.0.0/0"
+      IpProtocol: 'tcp'
+      FromPort: 0
+      ToPort: 65535
+
+  ECSHostSecurityGroupIngressCFR:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ECSHostSecurityGroup
+      SourceSecurityGroupId: !Ref CloudFrontRegion443GSecurityGroup
+      IpProtocol: 'tcp'
+      FromPort: 0
+      ToPort: 65535
+
+  CloudFrontGlobal443SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Global security group will allow only traffic from CloudFront and AWS WAF into ALB"
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${VPCStackName}-VPCID"
+      Tags:
+        - Key: Name
+          Value: "cloudfront_g"
+        - Key: AutoUpdate
+          Value: "true"
+        - Key: Protocol
+          Value: "https"
+
+  CloudFrontGlobal443SecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref CloudFrontGlobal443SecurityGroup
+      CidrIp: "0.0.0.0/0"
+      IpProtocol: '-1'
+      FromPort: 0
+      ToPort: 0
+  
+  CloudFrontGlobal443SecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref CloudFrontGlobal443SecurityGroup
+      CidrIp: "0.0.0.0/0"
+      IpProtocol: 'tcp'
+      FromPort: 443
+      ToPort: 443
+
+  CloudFrontRegion443GSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Region security group will allow only traffic from CloudFront and AWS WAF into ALB"
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${VPCStackName}-VPCID"
+      Tags:
+        - Key: Name
+          Value: "cloudfront_r"
+        - Key: AutoUpdate
+          Value: "true"
+        - Key: Protocol
+          Value: "https"
+
+  CloudFrontRegion443GSecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref CloudFrontRegion443GSecurityGroup
+      CidrIp: "0.0.0.0/0"
+      IpProtocol: '-1'
+      FromPort: 0
+      ToPort: 0
+
+  CloudFrontRegion443GSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref CloudFrontRegion443GSecurityGroup
+      CidrIp: "0.0.0.0/0"
+      IpProtocol: 'tcp'
+      FromPort: 443
+      ToPort: 443
+
+Outputs:
+  ECSHostSecurityGroup: 
+    Description: A reference to the security group for ECS hosts
+    Value: !Ref ECSHostSecurityGroup
+
+  CloudFrontGlobalSecurityGroup:
+    Description: A reference to the security group from CloudFront and AWS WAF into ALB
+    Value: !Ref CloudFrontGlobal443SecurityGroup
+
+  CloudFrontRegionGSecurityGroup:
+    Description: A reference to the security group from CloudFront and AWS WAF into ALB
+    Value: !Ref CloudFrontRegion443GSecurityGroup
+
+

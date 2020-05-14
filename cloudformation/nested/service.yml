@@ -1,0 +1,334 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Wordpress Stack
+
+Parameters:
+  # Global Variables
+  Environment:
+    Type: String
+  Application:
+    Type: String
+  VPCStackName:
+    Type: String
+  URIDockerImage:
+    Description: The uri of docker image
+    Type: String
+  URIRollbackDockerImage:
+    Description: The uri of the rollback docker image
+    Type: String
+  MinInstanceCount:
+    Description: How many instances of this task should we run across our cluster (min) ?
+    Type: Number
+  DesiredInstanceCount:
+    Description: How many instances of this task should we run across our cluster (desired) ?
+    Type: Number
+  MaxInstanceCount:
+    Description: How many instances of this task should we run across our cluster (max) ?
+    Type: Number
+  ScaleInCooldown:
+    Type: Number
+  ScaleOutCooldown:
+    Type: Number
+  ScaleTriggerType:
+    Type: String
+  ScaleTriggerThreshold:
+    Type: Number
+  LBPriority:
+    Description: The priority to register with the Load Balancer listener
+    Type: Number
+  DBName:
+    Description: RDS database name
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    NoEcho: True
+  DBUsername:
+    Description: DB username
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    NoEcho: True
+  DBUserPassword:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    NoEcho: True
+  # WpEndPoint:
+  #   Type: String
+  # WpAdminMail:
+  #   Type: 'AWS::SSM::Parameter::Value<String>'
+  # WpAdminPwd:
+  #   Type: 'AWS::SSM::Parameter::Value<String>'
+  # EfsId:
+  #   Type: String
+  ClusterName:
+    Type: String
+  ECSHostSecurityGroup:
+    Type: String
+  InstanceRDSPort:
+    Type: String
+  InstanceRDSHostname:
+    Type: String
+  ListenerArn:
+    Type: String
+
+Resources:
+  EC2EgressRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 0
+      ToPort: 65535
+      CidrIp: 0.0.0.0/0
+      GroupId: !Ref ECSHostSecurityGroup
+
+  ServiceScalableTarget:
+    Type: "AWS::ApplicationAutoScaling::ScalableTarget"
+    Properties:
+      MaxCapacity: !Ref MaxInstanceCount
+      MinCapacity: !Ref MinInstanceCount
+      ResourceId: !Join
+        - '/'
+        - - service
+          - !Sub "${ClusterName}"
+          - !GetAtt Service.Name
+      RoleARN: !GetAtt ServiceRole.Arn
+      ScalableDimension: "ecs:service:DesiredCount"
+      ServiceNamespace: ecs
+    DependsOn: Service
+
+  ServiceScalingPolicy:
+    Type: "AWS::ApplicationAutoScaling::ScalingPolicy"
+    Properties:
+      PolicyName: ServiceAutoScalingPolicy
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: ServiceScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: !Ref ScaleTriggerThreshold
+        ScaleInCooldown: !Ref ScaleInCooldown
+        ScaleOutCooldown: !Ref ScaleOutCooldown
+        PredefinedMetricSpecification:
+          PredefinedMetricType: !Ref ScaleTriggerType
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - ListenerRule
+    Properties:
+      ServiceName: !Sub '${AWS::StackName}'
+      Cluster: !Ref ClusterName
+      Role: !Ref ServiceRole
+      DesiredCount: !Ref DesiredInstanceCount
+      TaskDefinition: !Ref TaskDefinitionStrapi
+      HealthCheckGracePeriodSeconds: 60
+      LoadBalancers:
+        - ContainerName: !Sub "ifs-alpha-${Environment}-${Application}-strapi"
+          ContainerPort: 8080
+          TargetGroupArn: !Ref TargetGroup
+
+  TaskDefinitionStrapi:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${Environment}-${Application}"
+      ExecutionRoleArn: !GetAtt EcsTaskExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: !Sub "ifs-alpha-${Environment}-${Application}-strapi"
+          Essential: true
+          Image: !Ref URIDockerImage
+          Memory: 1024
+          PortMappings:
+            - ContainerPort: 8080
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref AWS::StackName
+              awslogs-region: !Ref AWS::Region
+          MountPoints:
+            - ContainerPath: "/mnt/efs_drive/public/"
+              SourceVolume: my-efs
+          Environment:
+            - Name: DB_HOST
+              Value: !Ref InstanceRDSHostname
+            - Name: DB_PORT
+              Value: !Ref InstanceRDSPort
+            - Name: DATABASE_NAME
+              Value: !Ref DBName
+            - Name: DATABASE_USERNAME
+              Value: !Ref DBUsername
+            # - Name: WP_ENDPOINT
+            #   Value: !Ref WpEndPoint
+            # - Name: WORDPRESS_EMAIL
+            #   Value: !Ref WpAdminMail
+            # - Name: WORDPRESS_PASSWORD
+            #   Value: !Ref WpAdminPwd
+          # Secrets:
+          #   - Name: WORDPRESS_DATABASE_PASSWORD
+          #     ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${Environment}-${Application}-db-password"
+      # Volumes:
+      #   - Name: my-efs
+      #     DockerVolumeConfiguration:
+      #       #            Autoprovision: true
+      #       Scope: "task"
+      #       Driver: "local"
+      #       DriverOpts:
+      #         type: "nfs"
+      #         device: !Sub "${EfsId}.efs.${AWS::Region}.amazonaws.com:/"
+      #         o: !Sub "addr=${EfsId}.efs.eu-central-1.amazonaws.com,nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport"
+
+        
+  # TaskDefinitionRollbackWP:
+  #   Type: AWS::ECS::TaskDefinition
+  #   Properties:
+  #     Family: !Sub "${Environment}-${Application}-rollback"
+  #     ExecutionRoleArn: !GetAtt EcsTaskExecutionRole.Arn
+  #     ContainerDefinitions:
+  #       - Name: !Sub "ifs-alpha-${Environment}-${Application}-wp-rollback"
+  #         Essential: true
+  #         Image: !Ref URIRollbackDockerImage
+  #         Memory: 1024
+  #         LogConfiguration:
+  #           LogDriver: awslogs
+  #           Options:
+  #             awslogs-group: !Ref AWS::StackName
+  #             awslogs-region: !Ref AWS::Region
+  #         MountPoints:
+  #           - ContainerPath: "/mnt/efs_drive/public/"
+  #             SourceVolume: my-efs
+  #     Volumes:
+  #       - Name: my-efs
+  #         DockerVolumeConfiguration:
+  #           Scope: "task"
+  #           Driver: "local"
+  #           DriverOpts:
+  #             type: "nfs"
+  #             device: !Sub "${EfsId}.efs.${AWS::Region}.amazonaws.com:/"
+  #             o: !Sub "addr=${EfsId}.efs.eu-central-1.amazonaws.com,nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport"
+        
+
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: 365
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: !Sub "${VPCStackName}-VPCID"
+      Port: 8080
+      Protocol: HTTP
+      Matcher:
+        HttpCode: 200-302
+      HealthCheckIntervalSeconds: 120
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 119
+      HealthyThresholdCount: 2
+#      TargetGroupAttributes:
+#        - Key: stickiness.enabled
+#          Value: true
+#        - Key: stickiness.type
+#          Value: lb_cookie
+#        - Key: stickiness.lb_cookie.duration_seconds
+#          Value: 86400
+
+  ListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref ListenerArn
+      Priority: !Ref LBPriority
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - "/*"
+
+      Actions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+
+
+  # This IAM Role grants the service access to register/unregister with the
+  # Application Load Balancer (ALB). It is based on the default documented here:
+
+  # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/service_IAM_role.html
+  ServiceRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: "Resource cannot be targeted since it is managed ones"
+          - id: W11
+            reason: "Resource cannot be targeted since it is managed ones"
+    Properties:
+      RoleName: !Sub "ecs-service-${AWS::StackName}"
+      Path: /
+      AssumeRolePolicyDocument: |
+        {
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": { "Service": [ "ecs.amazonaws.com","ecs-tasks.amazonaws.com" ]},
+            "Action": [ "sts:AssumeRole" ]
+          }
+          ]
+        }
+      Policies:
+        - PolicyName: !Sub "ecs-service-${AWS::StackName}"
+          PolicyDocument:
+            {
+              "Version": "2012-10-17",
+              "Statement": [{
+                              "Effect": "Allow",
+                              "Action": [
+                                "ec2:AuthorizeSecurityGroupIngress",
+                                "ec2:Describe*",
+                                "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                                "elasticloadbalancing:Describe*",
+                                "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                                "elasticloadbalancing:DeregisterTargets",
+                                "elasticloadbalancing:DescribeTargetGroups",
+                                "elasticloadbalancing:DescribeTargetHealth",
+                                "elasticloadbalancing:RegisterTargets",
+                              ],
+                              "Resource": "*"
+                            }]
+            }
+
+  EcsTaskExecutionRole:
+   Type: AWS::IAM::Role
+   Properties:
+     Path: /
+     RoleName:  !Sub "task-exec-${AWS::StackName}"
+     AssumeRolePolicyDocument:
+       Version: "2012-10-17"
+       Statement:
+         Effect: "Allow"
+         Principal:
+           Service:
+             - "ecs-tasks.amazonaws.com"
+         Action: "sts:AssumeRole"
+     Policies:
+       - PolicyName: !Sub "task-role-${AWS::StackName}-policy"
+         PolicyDocument:
+           Version: "2012-10-17"
+           Statement:
+             - Effect: "Allow"
+               Action:
+                 - ecr:GetAuthorizationToken
+                 - ecr:BatchCheckLayerAvailability
+                 - ecr:GetDownloadUrlForLayer
+                 - ecr:BatchGetImage
+                 - logs:CreateLogStream
+                 - logs:PutLogEvents
+               Resource: "*"
+       - PolicyName: !Sub "ecs-secrets-${AWS::StackName}-policy"
+         PolicyDocument:
+           Version: "2012-10-17"
+           Statement:
+             - Effect: "Allow"
+               Action:
+                 - ssm:GetParameters
+               Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${Environment}-${Application}-db-password"
+
+Outputs:
+  TaskArn:
+    Description: ARN of the task
+    Value: !Ref TaskDefinitionStrapi
+    Export:
+      Name: !Sub "${AWS::StackName}-TaskDefinitionArn"
