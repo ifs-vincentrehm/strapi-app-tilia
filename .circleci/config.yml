@@ -436,31 +436,30 @@ workflows:
 
   workflow_build_develop:
     jobs:
-      - job_scancloudformation_in_dev_environment:
-          context: SupportIntegration
-          filters:
-            branches:
-              only:
-                - develop
-      - job_scansonar_in_dev_environment:
-          context: SupportIntegration
-          filters:
-            branches:
-              only:
-                - develop
-      - job_unitarytest_in_dev_environment:
-          context: SupportIntegration
-          filters:
-            branches:
-              only:
-                - develop
+      # - job_scancloudformation_in_dev_environment:
+      #     context: SupportIntegration
+      #     filters:
+      #       branches:
+      #         only:
+      #           - develop
+      # - job_scansonar_in_dev_environment:
+      #     context: SupportIntegration
+      #     filters:
+      #       branches:
+      #         only:
+      #           - develop
+      # - job_unitarytest_in_dev_environment:
+      #     context: SupportIntegration
+      #     filters:
+      #       branches:
+      #         only:
+      #           - develop
       - job_deploy_in_dev_environment:
           context: SupportIntegration
-
-          requires:
-            - job_scancloudformation_in_dev_environment
-            - job_scansonar_in_dev_environment
-            - job_unitarytest_in_dev_environment
+          # requires:
+          #   - job_scancloudformation_in_dev_environment
+          #   - job_scansonar_in_dev_environment
+          #   - job_unitarytest_in_dev_environment
           filters:
             branches:
               only:
