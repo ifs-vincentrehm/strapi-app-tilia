@@ -6,8 +6,8 @@ Parameters:
     Type: String
   Application:
     Type: String
-  PreviousBackupsDeletedAfterDays:
-    Type: Number
+  #PreviousBackupsDeletedAfterDays:
+  #  Type: Number
 
 Resources:
 
@@ -41,24 +41,24 @@ Resources:
           - !Ref Application
           - nestedtemplates
 
-  S3Backups:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: Private
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      BucketName:
-        Fn::Join:
-        - "-"
-        - - !Ref Environment
-          - !Ref Application
-          - backups
-      LifecycleConfiguration:
-        Rules:
-          - Id: DeleteOldBackupsAfterOneMonth
-            NoncurrentVersionExpirationInDays: !Ref PreviousBackupsDeletedAfterDays
-            Status: 'Enabled'
-      VersioningConfiguration:
-        Status: 'Enabled'
+  # S3Backups:
+  #   Type: AWS::S3::Bucket
+  #   Properties:
+  #     AccessControl: Private
+  #     BucketEncryption:
+  #       ServerSideEncryptionConfiguration:
+  #         - ServerSideEncryptionByDefault:
+  #             SSEAlgorithm: AES256
+  #     BucketName:
+  #       Fn::Join:
+  #       - "-"
+  #       - - !Ref Environment
+  #         - !Ref Application
+  #         - backups
+  #     LifecycleConfiguration:
+  #       Rules:
+  #         - Id: DeleteOldBackupsAfterOneMonth
+  #           NoncurrentVersionExpirationInDays: !Ref PreviousBackupsDeletedAfterDays
+  #           Status: 'Enabled'
+  #     VersioningConfiguration:
+  #       Status: 'Enabled'
