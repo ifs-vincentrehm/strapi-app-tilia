@@ -15,6 +15,11 @@ references:
       - image: pcisupport/ci-awscli-java-mvn-sonarscanner:1.0
     working_directory: ~/workspace
 
+  awscli_image: &awscli_image
+    docker:
+      - image: pcisupport/ci-awscli-python:2.7
+    working_directory: ~/workspace
+
   katalon_image: &katalon_image
     docker:
       - image: pcisupport/ci-katalon-new:latest
@@ -125,7 +130,7 @@ references:
 jobs:
 
   job_deploy_in_dev_environment:
-    <<: *awsclimaven_image
+    <<: *awscli_image
     environment:
       CONF_ENV: develop
     steps:
