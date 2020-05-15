@@ -240,12 +240,12 @@ check_stack_status ${STACKFULLNAME} ${REGION}
 ###################################################
 ## Package maven
 ###################################################
-mvn clean -q package
+#mvn clean -q package
 
 ###################################################
 ## Deploy Docker Repository
 ###################################################
-docker build -t ${PREFIX_REPO_ECR}/${APPLICATION_NAME}
+docker build -t ${PREFIX_REPO_ECR}/${APPLICATION_NAME} .
 
 REPO_ECR_NAME=$(aws ecr describe-repositories --region ${REGION} --repository-name ${PREFIX_REPO_ECR}/${APPLICATION_NAME} | jq -r .repositories[].repositoryUri)
 if [[ -z "${REPO_ECR_NAME}" ]]; then
