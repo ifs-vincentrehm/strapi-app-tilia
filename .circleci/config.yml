@@ -464,14 +464,14 @@ workflows:
             branches:
               only:
                 - develop
-      - job_nrlighttest_in_dev_environment:
-          context: SupportIntegration
-          requires:
-            - job_deploy_in_dev_environment
-          filters:
-            branches:
-              only:
-                - develop
+      # - job_nrlighttest_in_dev_environment:
+      #     context: SupportIntegration
+      #     requires:
+      #       - job_deploy_in_dev_environment
+      #     filters:
+      #       branches:
+      #         only:
+      #           - develop
       # - utils-orb/workflow_collector:
       #     project-name: "colivme"
       #     context: pipeline-analytics-release
