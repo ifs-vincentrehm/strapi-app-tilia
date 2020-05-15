@@ -22,9 +22,9 @@ FROM node
 ###################################
 # INSTALL TOOLS
 ###################################
-RUN sudo apt-get update && sudo apt-get upgrade && \
-  sudo npm install -g typescript@3.6.3 && \
-  sudo npm install -g aws-cdk@1.9.0
+RUN apt-get update && apt-get upgrade && \
+  npm install -g typescript@3.6.3 && \
+  npm install -g aws-cdk@1.9.0
 
 RUN npx create-strapi-app strapi-colivme
  
