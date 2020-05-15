@@ -265,19 +265,32 @@ docker push ${URI_DOCKER_IMAGE}
 ###################################################
 ## Create Parameter Store Variables by awscli
 ###################################################
-PS_DB_NAME_KEY="${TARGET_ENVIRONMENT}-${APPLICATION_INFRASTRUCTURE_NAME}-${SUFFIX_DB_NAME_KEY}"
-PS_DB_USERNAME_KEY="${TARGET_ENVIRONMENT}-${APPLICATION_INFRASTRUCTURE_NAME}-${SUFFIX_DB_USERNAME_KEY}"
-PS_DB_USER_PASSWORD_KEY="${TARGET_ENVIRONMENT}-${APPLICATION_INFRASTRUCTURE_NAME}-${SUFFIX_DB_USER_PASSWORD_KEY}"
+PS_DB_NAME_KEY="${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${SUFFIX_DB_NAME_KEY}"
+PS_DB_USERNAME_KEY="${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${SUFFIX_DB_USERNAME_KEY}"
+PS_DB_USER_PASSWORD_KEY="${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${SUFFIX_DB_USER_PASSWORD_KEY}"
 
 # On recupere les valeurs des paramters
-PS_DB_NAME_VALUE=$(aws ssm get-parameters --names "${PS_DB_NAME_KEY}" --region "${REGION}" | jq -r ".Parameters[] | select((.Name|index(\""${PS_DB_NAME_KEY}"\")))" | jq -r '.Value')
-PS_DB_USERNAME_VALUE=$(aws ssm get-parameters --names "${PS_DB_USERNAME_KEY}" --region "${REGION}" | jq -r ".Parameters[] | select((.Name|index(\""${PS_DB_USERNAME_KEY}"\")))" | jq -r '.Value')
-PS_DB_USER_PASSWORD_VALUE=$(aws ssm get-parameters --names "${PS_DB_USER_PASSWORD_KEY}" --region "${REGION}" | jq -r ".Parameters[] | select((.Name|index(\""${PS_DB_USER_PASSWORD_KEY}"\")))" | jq -r '.Value')
+PS_DB_NAME_VALUE=$(aws ssm get-parameter --name "${PS_DB_NAME_KEY}" --region "${REGION}" | jq -r ".Parameter.Value")
+PS_DB_USERNAME_VALUE=$(aws ssm get-parameter --name "${PS_DB_USERNAME_KEY}" --region "${REGION}" | jq -r ".Parameter.Value")
+PS_DB_USER_PASSWORD_VALUE=$(aws ssm get-parameter --name "${PS_DB_USER_PASSWORD_KEY}" --region "${REGION}" | jq -r ".Parameter.Value")
 
 # Si les parameters n'existent pas on les cree et on les pousse dans parameter store
-if [[ -z "$PS_DB_NAME_VALUE" ]] || [[ -z "$PS_DB_USERNAME_VALUE" ]] || [[ -z "$PS_DB_USER_PASSWORD_VALUE" ]] ; then
-  echo "ERROR : One of the three following parameters dont have value : ${PS_DB_NAME_KEY}, ${PS_DB_USERNAME_KEY}, ${PS_DB_USER_PASSWORD_KEY}"
-  exit 12
+if [[ -z "$PS_DB_NAME_VALUE" ]]; then
+  # on genere un nom de bdd sans chiffre, sans caracteres speciaux et sans majuscule
+  PS_DB_NAME_VALUE=$(pwgen -0 -A 10 1)
+  result=$(aws ssm put-parameter --name "${PS_DB_NAME_KEY}" --type "String" --value "${PS_DB_NAME_VALUE}" --region "${REGION}" --overwrite)
+fi
+
+if [[ -z "$PS_DB_USERNAME_VALUE" ]]; then
+  # on genere un nom de user bdd sans chiffre, sans caracteres speciaux et sans majuscule
+  PS_DB_USERNAME_VALUE=$(pwgen -0 -A 10 1)
+  result=$(aws ssm put-parameter --name "${PS_DB_USERNAME_KEY}" --type "String" --value "${PS_DB_USERNAME_VALUE}" --region "${REGION}" --overwrite)
+fi
+
+if [[ -z "$PS_DB_USER_PASSWORD_VALUE" ]]; then
+  # on genere un mot de passe de bdd complexe avec des caracteres speciaux, des nombres et des majuscules
+  PS_DB_USER_PASSWORD_VALUE=$(pwgen -y -c -s 30 1)
+  result=$(aws ssm put-parameter --name "${PS_DB_USER_PASSWORD_KEY}" --type "String" --value "${PS_DB_USER_PASSWORD_VALUE}" --region "${REGION}" --overwrite)
 fi
 
 
