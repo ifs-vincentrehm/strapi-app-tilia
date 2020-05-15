@@ -426,13 +426,13 @@ workflows:
             branches:
               only:
                 - test
-      - utils-orb/workflow_collector:
-          project-name: "colivme"
-          context: pipeline-analytics-release
-          filters:
-            branches:
-              only:
-              - test
+      # - utils-orb/workflow_collector:
+      #     project-name: "colivme"
+      #     context: pipeline-analytics-release
+      #     filters:
+      #       branches:
+      #         only:
+      #         - test
 
   workflow_build_develop:
     jobs:
@@ -472,13 +472,13 @@ workflows:
             branches:
               only:
                 - develop
-      - utils-orb/workflow_collector:
-          project-name: "colivme"
-          context: pipeline-analytics-release
-          filters:
-            branches:
-              only:
-              - develop
+      # - utils-orb/workflow_collector:
+      #     project-name: "colivme"
+      #     context: pipeline-analytics-release
+      #     filters:
+      #       branches:
+      #         only:
+      #         - develop
 
   workflow_build_release:
     jobs:
@@ -559,13 +559,13 @@ workflows:
             branches:
               only:
                 - master
-      - utils-orb/workflow_collector:
-          project-name: "colivme"
-          context: pipeline-analytics-release
-          filters:
-            branches:
-              only:
-              - master
+      # - utils-orb/workflow_collector:
+      #     project-name: "colivme"
+      #     context: pipeline-analytics-release
+      #     filters:
+      #       branches:
+      #         only:
+      #         - master
 #    - job_healthchecktest_in_release_environment:
 #        context : ReferenceArchitecturesRelease
 #        requires:
