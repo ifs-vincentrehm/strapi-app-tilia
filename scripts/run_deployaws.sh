@@ -99,14 +99,17 @@ deploy_main_stack(){
     us_certificate_arn=$(aws cloudformation list-exports --region ${WORLD_REGION} | jq -r ".Exports[] | select((.Name|index(\""${CERTIFICATE_STACKNAME}-${WORLD_REGION}-CertificateArn"\")))" | jq -r ".Value" )
 
     # Package and copy to s3 nestedtemplates
-    aws cloudformation package \
-        --template-file cloudformation/nested/alb.yml \
-        --output-template-file cloudformation/nested/out-alb.yml \
-        --s3-bucket ${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${ARTEFACTBUCKET} \
-        --s3-prefix ${CIRCLE_BRANCH}/nested/${CIRCLE_SHA1}
-
+    # aws cloudformation package \
+    #     --template-file cloudformation/nested/alb.yml \
+    #     --output-template-file cloudformation/nested/out-alb.yml \
+    #     --s3-bucket ${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${ARTEFACTBUCKET} \
+    #     --s3-prefix ${CIRCLE_BRANCH}/nested/${CIRCLE_SHA1}
+    #     --region ${REGION} \
+    pwd
     aws s3 cp cloudformation/nested/ s3://${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-nestedtemplates/ --recursive
-
+    cd cloudformation/nested/
+    ls
+    
     # Deploy nested satck
     echo "Let's deploy the master cloudformation file : ${TARGET_ENVIRONMENT}"
     
