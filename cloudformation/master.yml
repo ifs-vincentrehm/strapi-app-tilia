@@ -213,7 +213,7 @@ Resources:
         ECSHostSecurityGroup: !GetAtt SGStack.Outputs.ECSHostSecurityGroup
         ClusterName: !GetAtt ECSClusterStack.Outputs.ClusterName
         ListenerArn: !GetAtt ALBStack.Outputs.ListenerArn
-        EfsId: !GetAtt EFSStack.Outputs.EfsId
+        #EfsId: !GetAtt EFSStack.Outputs.EfsId
         InstanceRDSHostname: !GetAtt RDSStack.Outputs.InstanceRDSHostname
         InstanceRDSPort: !GetAtt RDSStack.Outputs.InstanceRDSPort
         DBName: !Ref DBName

@@ -366,5 +366,5 @@ fi
     function_name=$(aws cloudformation list-exports --region ${REGION} | jq -r ".Exports[] | select((.Name|index(\""${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-LambdaInitSG"\")))" | jq -r ".Value" )
     aws lambda invoke --function-name $function_name --invocation-type 'Event'  --payload '{"url":"https://ip-ranges.amazonaws.com/ip-ranges.json"}' outputfile.txt
 
-}
+
 
