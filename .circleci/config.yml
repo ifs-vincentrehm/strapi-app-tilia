@@ -126,9 +126,8 @@ references:
     add_ssh_keys:
       fingerprints:
         - "45:89:6f:e3:10:f4:58:86:b5:a8:f3:1e:a3:07:5f:15"
-
+        
 jobs:
-
   job_deploy_in_dev_environment:
     <<: *awscli_image
     environment:
