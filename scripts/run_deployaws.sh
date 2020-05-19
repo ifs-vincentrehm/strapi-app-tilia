@@ -237,6 +237,17 @@ aws cloudformation deploy \
 
 check_stack_status ${STACKFULLNAME} ${REGION}
 
+
+cp -p src/ecs-lifecycle-hook/"${LIFECYCLE_LAUNCH_FUNCTION}.py" function.py
+zip "${LIFECYCLE_LAUNCH_FUNCTION}.zip" function.py
+
+cp -p src/ecs-lifecycle-hook/"${LIFECYCLE_TERMINATE_FUNCTION}.py" function.py
+zip "${LIFECYCLE_TERMINATE_FUNCTION}.zip" function.py
+
+aws s3 cp "${LIFECYCLE_LAUNCH_FUNCTION}.zip" s3://${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${ARTEFACTBUCKET}/
+aws s3 cp "${LIFECYCLE_TERMINATE_FUNCTION}.zip" s3://${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${ARTEFACTBUCKET}/
+
+
 ###################################################
 ## Package maven
 ###################################################
