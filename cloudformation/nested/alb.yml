@@ -65,7 +65,7 @@ Resources:
   DefaultTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub ${Environment}-${Application}TargetGroup
+      Name: !Sub ${Environment}-strapi-TargetGroup
       VpcId: 
         Fn::ImportValue: !Sub "${VPCStackName}-VPCID"
       Port: 80
