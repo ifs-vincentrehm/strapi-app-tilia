@@ -293,6 +293,15 @@ if [[ -z "$PS_DB_USER_PASSWORD_VALUE" ]]; then
   result=$(aws ssm put-parameter --name "${PS_DB_USER_PASSWORD_KEY}" --type "String" --value "${PS_DB_USER_PASSWORD_VALUE}" --region "${REGION}" --overwrite)
 fi
 
+ # Get deployed lambdaedge Basic Auth and security versions
+    LAMBDABASICAUTHVERSION=$(aws cloudformation list-exports --region ${LAMBDAEDGE_REGION} | jq -r ".Exports[] | select((.Name|index(\""${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${LAMBDAEDGE_STACKNAME}-LambdaBasicAuthVersion"\")>=0))" | jq -r ".Value" )
+    LAMBDASECURITYVERSION=$(aws cloudformation list-exports --region ${LAMBDAEDGE_REGION} | jq -r ".Exports[] | select((.Name|index(\""${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${LAMBDAEDGE_STACKNAME}-LambdaSecurityVersion"\")>=0))" | jq -r ".Value" )
+
+    # Get ARN for KMS key of rds
+    aws_service_role_for_rds_arn=$(aws iam get-role --role-name AWSServiceRoleForRDS | jq -r ".Role.Arn")
+    us_certificate_arn=$(aws cloudformation list-exports --region ${WORLD_REGION} | jq -r ".Exports[] | select((.Name|index(\""${CERTIFICATE_STACKNAME}-${WORLD_REGION}-CertificateArn"\")))" | jq -r ".Value" )
+
+
   # Package and copy to s3 nestedtemplates
     aws cloudformation package \
         --template-file cloudformation/nested/alb.yml \
