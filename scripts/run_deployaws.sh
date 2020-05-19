@@ -105,10 +105,7 @@ deploy_main_stack(){
     #     --s3-bucket ${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${ARTEFACTBUCKET} \
     #     --s3-prefix ${CIRCLE_BRANCH}/nested/${CIRCLE_SHA1}
     #     --region ${REGION} \
-    pwd
-    aws s3 cp cloudformation/nested/ s3://${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-nestedtemplates/ --recursive
-    cd cloudformation/nested/
-    ls
+
     
     # Deploy nested satck
     echo "Let's deploy the master cloudformation file : ${TARGET_ENVIRONMENT}"
@@ -296,72 +293,71 @@ if [[ -z "$PS_DB_USER_PASSWORD_VALUE" ]]; then
   result=$(aws ssm put-parameter --name "${PS_DB_USER_PASSWORD_KEY}" --type "String" --value "${PS_DB_USER_PASSWORD_VALUE}" --region "${REGION}" --overwrite)
 fi
 
+pwd
+aws s3 cp cloudformation/nested/ s3://${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-nestedtemplates/ --recursive
 
-  # Deploy nested satck
-    echo "Let's deploy the master cloudformation file : ${TARGET_ENVIRONMENT}"
+# Deploy nested satck
+echo "Let's deploy the master cloudformation file : ${TARGET_ENVIRONMENT}"
     
-    aws cloudformation deploy \
-        --template-file cloudformation/master.yml \
-        --stack-name ${TARGET_ENVIRONMENT}-${APPLICATION_NAME} \
-        --parameter-overrides \
-            Environment=${TARGET_ENVIRONMENT} \
-            Application=${APPLICATION_NAME} \
-            ProjectName=${PROJECT_NAME} \
-            EnvironmentType=${ENVIRONMENT_TYPE} \
-            VPCStackName=${VPC_STACKNAME} \
-            CertificateArn=${CERTIFICATE_STACKNAME} \
-            USCertificateArn=${us_certificate_arn} \
-            MinClusterSize=${MIN_CLUSTER_SIZE} \
-            MaxClusterSize=${MAX_CLUSTER_SIZE} \
-            DesiredClusterSize=${DESIRED_CLUSTER_SIZE} \
-            Domain=${DOMAIN} \
-            ScalableMetricType=${AUTOSCALING_TRIGGER_TYPE} \
-            ScalableMetricThreshold=${AUTOSCALING_TRIGGER_THRESHOLD} \
-            Cooldown=${AUTOSCALING_TRIGGER_COOLDOWN} \
-            InstanceType=${ECS_INSTANCE_TYPE} \
-            HostedZoneStackName=${DOMAINNAME_STACKNAME} \
-            CertificateStackName=${CERTIFICATE_STACKNAME} \
-            DBPort=${DB_PORT} \
-            DBType=${DB_TYPE} \
-            DBVersion=${DB_VERSION} \
-            DBInstanceClass=${DB_INSTANCECLASS} \
-            DBAllocatedStorage=${DB_ALLOCATEDSTORAGE} \
-            DBName=${PS_DB_NAME_KEY} \
-            DBUsername=${PS_DB_USERNAME_KEY} \
-            DBUserPassword=${PS_DB_USER_PASSWORD_KEY} \
-            DBStorageEncryption=${DB_STORAGEENCRYPTION} \
-            DBBackupRetentionPeriod=${DB_BACKUPRETENTIONPERIOD} \
-            AWSServiceRoleForRDSArn=${aws_service_role_for_rds_arn} \
-            LambdaBasicAuthVersion=${LAMBDABASICAUTHVERSION} \
-            LambdaSecurityVersion=${LAMBDASECURITYVERSION} \
-            UseBasicAuth=${USE_BASICAUTH} \
-            DeploymentS3Bucket=${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${ARTEFACTBUCKET} \
-            LifecycleLaunchFunctionZip="${LIFECYCLE_LAUNCH_FUNCTION}.zip" \
-            LifecycleTerminateFunctionZip="${LIFECYCLE_TERMINATE_FUNCTION}.zip" \
-            LBPriority=${LB_PRIORITY} \
-            ScaleInCooldown=${AUTOSCALING_TRIGGER_SCALEINCOOLDOWN} \
-            ScaleOutCooldown=${AUTOSCALING_TRIGGER_SCALEOUTCOOLDOWN} \
-            ScaleTriggerType=${AUTOSCALING_TRIGGER_TYPE} \
-            ScaleTriggerThreshold=${AUTOSCALING_TRIGGER_THRESHOLD} \
-            MinInstanceCount=${MIN_INSTANCE_COUNT} \
-            DesiredInstanceCount=${DESIRED_INSTANCE_COUNT} \
-            MaxInstanceCount=${MAX_INSTANCE_COUNT} \
-            URIDockerImage=${uri_image} \
-            URIRollbackDockerImage=${uri_rollback_image} \
-            ApplicationRegion=${REGION} \
-            LoadbalancerHostedZoneID=${LOADBALANCER_HOSTEDZONEID}\
-            AlbDomain=${ALBDOMAIN}\
-            WpEndPoint=${WP_ENDPOINT}\
-            WpAdminMail=${WP_ADMIN_EMAIL_KEY}\
-            WpAdminPwd=${WP_ADMIN_PASSWORD_KEY}\
-        --tags \
-            Project=${PROJECT_NAME} \
-            EnvironmentId=${TARGET_ENVIRONMENT} \
-            EnvironmentType=${ENVIRONMENT_TYPE} \
-            ApplicationName=${APPLICATION_NAME} \
-        --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
-        --region ${REGION} \
-        --no-fail-on-empty-changeset
+aws cloudformation deploy \
+    --template-file cloudformation/master.yml \
+    --stack-name ${TARGET_ENVIRONMENT}-${APPLICATION_NAME} \
+    --parameter-overrides \
+        Environment=${TARGET_ENVIRONMENT} \
+        Application=${APPLICATION_NAME} \
+        ProjectName=${PROJECT_NAME} \
+        EnvironmentType=${ENVIRONMENT_TYPE} \
+        VPCStackName=${VPC_STACKNAME} \
+        CertificateArn=${CERTIFICATE_STACKNAME} \
+        USCertificateArn=${us_certificate_arn} \
+        MinClusterSize=${MIN_CLUSTER_SIZE} \
+        MaxClusterSize=${MAX_CLUSTER_SIZE} \
+        DesiredClusterSize=${DESIRED_CLUSTER_SIZE} \
+        Domain=${DOMAIN} \
+        ScalableMetricType=${AUTOSCALING_TRIGGER_TYPE} \
+        ScalableMetricThreshold=${AUTOSCALING_TRIGGER_THRESHOLD} \
+        Cooldown=${AUTOSCALING_TRIGGER_COOLDOWN} \
+        InstanceType=${ECS_INSTANCE_TYPE} \
+        HostedZoneStackName=${DOMAINNAME_STACKNAME} \
+        CertificateStackName=${CERTIFICATE_STACKNAME} \
+        DBPort=${DB_PORT} \
+        DBType=${DB_TYPE} \
+        DBVersion=${DB_VERSION} \
+        DBInstanceClass=${DB_INSTANCECLASS} \
+        DBAllocatedStorage=${DB_ALLOCATEDSTORAGE} \
+        DBName=${PS_DB_NAME_KEY} \
+        DBUsername=${PS_DB_USERNAME_KEY} \
+        DBUserPassword=${PS_DB_USER_PASSWORD_KEY} \
+        DBStorageEncryption=${DB_STORAGEENCRYPTION} \
+        DBBackupRetentionPeriod=${DB_BACKUPRETENTIONPERIOD} \
+        AWSServiceRoleForRDSArn=${aws_service_role_for_rds_arn} \
+        LambdaBasicAuthVersion=${LAMBDABASICAUTHVERSION} \
+        LambdaSecurityVersion=${LAMBDASECURITYVERSION} \
+        UseBasicAuth=${USE_BASICAUTH} \
+        DeploymentS3Bucket=${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${ARTEFACTBUCKET} \
+        LifecycleLaunchFunctionZip="${LIFECYCLE_LAUNCH_FUNCTION}.zip" \
+        LifecycleTerminateFunctionZip="${LIFECYCLE_TERMINATE_FUNCTION}.zip" \
+        LBPriority=${LB_PRIORITY} \
+        ScaleInCooldown=${AUTOSCALING_TRIGGER_SCALEINCOOLDOWN} \
+        ScaleOutCooldown=${AUTOSCALING_TRIGGER_SCALEOUTCOOLDOWN} \
+        ScaleTriggerType=${AUTOSCALING_TRIGGER_TYPE} \
+        ScaleTriggerThreshold=${AUTOSCALING_TRIGGER_THRESHOLD} \
+        MinInstanceCount=${MIN_INSTANCE_COUNT} \
+        DesiredInstanceCount=${DESIRED_INSTANCE_COUNT} \
+        MaxInstanceCount=${MAX_INSTANCE_COUNT} \
+        URIDockerImage=${uri_image} \
+        URIRollbackDockerImage=${uri_rollback_image} \
+        ApplicationRegion=${REGION} \
+        LoadbalancerHostedZoneID=${LOADBALANCER_HOSTEDZONEID}\
+        AlbDomain=${ALBDOMAIN}\
+    --tags \
+        Project=${PROJECT_NAME} \
+        EnvironmentId=${TARGET_ENVIRONMENT} \
+        EnvironmentType=${ENVIRONMENT_TYPE} \
+        ApplicationName=${APPLICATION_NAME} \
+    --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
+    --region ${REGION} \
+    --no-fail-on-empty-changeset
 
     check_stack_status ${TARGET_ENVIRONMENT}-${APPLICATION_NAME} ${REGION}
 
