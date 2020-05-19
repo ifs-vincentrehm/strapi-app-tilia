@@ -293,7 +293,14 @@ if [[ -z "$PS_DB_USER_PASSWORD_VALUE" ]]; then
   result=$(aws ssm put-parameter --name "${PS_DB_USER_PASSWORD_KEY}" --type "String" --value "${PS_DB_USER_PASSWORD_VALUE}" --region "${REGION}" --overwrite)
 fi
 
-pwd
+  # Package and copy to s3 nestedtemplates
+    aws cloudformation package \
+        --template-file cloudformation/nested/alb.yml \
+        --output-template-file cloudformation/nested/out-alb.yml \
+        --s3-bucket ${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${ARTEFACTBUCKET} \
+        --s3-prefix ${CIRCLE_BRANCH}/nested/${CIRCLE_SHA1}
+
+
 aws s3 cp cloudformation/nested/ s3://${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-nestedtemplates/ --recursive
 
 # Deploy nested satck
