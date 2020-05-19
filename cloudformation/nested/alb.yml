@@ -164,7 +164,12 @@ Resources:
         HostedZoneId: !Ref LoadbalancerHostedZoneID
       HostedZoneId:
         Fn::ImportValue: !Sub "${HostedZoneStackName}-PublicZoneId"
-      Name: !Ref AlbDomain
+      Name: 
+        Fn::Join:
+          - "."
+          - - 'blog'
+            - Fn::ImportValue:
+                !Sub "${HostedZoneStackName}-DomainName"
       Type: A
 
 
