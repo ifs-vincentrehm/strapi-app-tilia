@@ -101,7 +101,11 @@ Resources:
       HostedZoneId:
         Fn::ImportValue: !Sub "${HostedZoneStackName}-PublicZoneId"
       Name:
-        !Ref Domain
+        Fn::Join:
+          - "."
+          - - 'blog'
+            - Fn::ImportValue:
+                !Sub "${HostedZoneStackName}-DomainName"
       Type: A
 
 

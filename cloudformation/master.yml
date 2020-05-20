@@ -6,8 +6,6 @@ Parameters:
     Type: String
   USCertificateArn:
     Type: String
-  Domain:
-    Type: String
     Default: Z2FDTNDATAQYW2
   Environment:
     Type: String
@@ -93,15 +91,6 @@ Parameters:
     Type: String
   LoadbalancerHostedZoneID:
     Type: String
-  AlbDomain:
-    Type: String
-
-  # WpEndPoint:
-  #   Type: String
-  # WpAdminMail:
-  #   Type: String
-  # WpAdminPwd:
-  #   Type: String
 
 Resources:
 
@@ -117,10 +106,8 @@ Resources:
         CloudFrontGlobalSecurityGroup: !GetAtt SGStack.Outputs.CloudFrontGlobalSecurityGroup
         CloudFrontRegionGSecurityGroup: !GetAtt SGStack.Outputs.CloudFrontRegionGSecurityGroup
         ApplicationRegion: !Ref ApplicationRegion
-        Domain: !Ref Domain
         HostedZoneStackName: !Ref HostedZoneStackName
         LoadbalancerHostedZoneID: !Ref LoadbalancerHostedZoneID
-        AlbDomain: !Ref AlbDomain
 
   SGStack:
     Type: "AWS::CloudFormation::Stack"
@@ -153,7 +140,6 @@ Resources:
         VPCStackName: !Ref VPCStackName
         USCertificateArn: !Ref USCertificateArn
         HostedZoneStackName: !Ref HostedZoneStackName
-        Domain: !Ref Domain
         ApplicationLoadBalancerUrl : !GetAtt ALBStack.Outputs.ApplicationLoadBalancerUrl
         UseBasicAuth : !Ref UseBasicAuth
         LambdaBasicAuthVersion: !Ref LambdaBasicAuthVersion

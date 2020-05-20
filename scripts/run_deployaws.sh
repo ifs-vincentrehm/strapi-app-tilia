@@ -124,7 +124,6 @@ deploy_main_stack(){
             MinClusterSize=${MIN_CLUSTER_SIZE} \
             MaxClusterSize=${MAX_CLUSTER_SIZE} \
             DesiredClusterSize=${DESIRED_CLUSTER_SIZE} \
-            Domain=${DOMAIN} \
             ScalableMetricType=${AUTOSCALING_TRIGGER_TYPE} \
             ScalableMetricThreshold=${AUTOSCALING_TRIGGER_THRESHOLD} \
             Cooldown=${AUTOSCALING_TRIGGER_COOLDOWN} \
@@ -417,7 +416,6 @@ aws cloudformation deploy \
         URIRollbackDockerImage=${uri_rollback_image} \
         ApplicationRegion=${REGION} \
         LoadbalancerHostedZoneID=${LOADBALANCER_HOSTEDZONEID}\
-        AlbDomain=${ALBDOMAIN}\
     --tags \
         Project=${PROJECT_NAME} \
         EnvironmentId=${TARGET_ENVIRONMENT} \
