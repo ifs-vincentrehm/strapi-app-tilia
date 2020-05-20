@@ -79,11 +79,11 @@ Resources:
           MinimumProtocolVersion: TLSv1.1_2016
         HttpVersion: http2
         Aliases:
-          Fn::Join:
-            - "."
-            - - 'blog'
-              - Fn::ImportValue:
-                  !Sub "${HostedZoneStackName}-DomainName"
+          - Fn::Join:
+              - "."
+              - - 'blog'
+                - Fn::ImportValue:
+                    !Sub "${HostedZoneStackName}-DomainName"
 
 
   DNSRecordMain:
