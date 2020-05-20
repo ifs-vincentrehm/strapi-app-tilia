@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Wordpress - CloudFront Stack -'
+Description: 'CloudFront Stack -'
 
 Parameters:
   VPCStackName:
@@ -13,8 +13,6 @@ Parameters:
   AliasTargetHostedZoneId:
     Type: String
     Default: Z2FDTNDATAQYW2
-  Domain:
-    Type: String
   USCertificateArn:
     Description: the ARN of the AWS Certificate.
     Type: String
@@ -81,12 +79,11 @@ Resources:
           MinimumProtocolVersion: TLSv1.1_2016
         HttpVersion: http2
         Aliases:
-          - Fn::Join:
-              - '.'
-              - - '*'
-
-                - !Ref Domain
-          - !Ref Domain
+          Fn::Join:
+            - "."
+            - - 'blog'
+              - Fn::ImportValue:
+                  !Sub "${HostedZoneStackName}-DomainName"
 
 
   DNSRecordMain:
@@ -125,6 +122,7 @@ Resources:
       Name:
         Fn::Join:
           - "."
-          - - '*'
-            - !Ref Domain
+          - - 'blog'
+            - Fn::ImportValue:
+                !Sub "${HostedZoneStackName}-DomainName"
       Type: A

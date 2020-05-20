@@ -20,13 +20,9 @@ Parameters:
     Type: String
   ApplicationRegion:
     Type: String
-  Domain:
-    Type: String
   HostedZoneStackName:
     Type: String
   LoadbalancerHostedZoneID:
-    Type: String
-  AlbDomain:
     Type: String
 
 
