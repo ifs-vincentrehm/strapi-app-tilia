@@ -163,7 +163,7 @@ Resources:
       Name: 
         Fn::Join:
           - "."
-          - - 'blog'
+          - - 'blog-alb'
             - Fn::ImportValue:
                 !Sub "${HostedZoneStackName}-DomainName"
       Type: A
