@@ -138,9 +138,6 @@ Resources:
             Options:
               awslogs-group: !Ref AWS::StackName
               awslogs-region: !Ref AWS::Region
-          MountPoints:
-            - ContainerPath: "/mnt/efs_drive/public/"
-              SourceVolume: my-efs
           Environment:
             - Name: DB_HOST
               Value: !Ref InstanceRDSHostname
