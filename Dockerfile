@@ -14,18 +14,19 @@
 # COPY wordpress-install/bivwak-auto-update-addons.json /bivwak-auto-update-plugin/
 # COPY wordpress-install/bivwak-auto-update-plugin-installer.sh /bivwak-auto-update-plugin/
 
-# # Because installing against already populated database :
-# # ENV WORDPRESS_SKIP_INSTALL 'yes'
-# USER 1001
+FROM strapi/base
 
-FROM node
-###################################
-# INSTALL TOOLS
-###################################
-RUN apt-get update && apt-get upgrade && \
-  npm install -g typescript@3.6.3 && \
-  npm install -g aws-cdk@1.9.0
+WORKDIR /my-path
 
-RUN npx create-strapi-app strapi-colivme
+
+COPY ./appplication/package.json ./
+
  
-EXPOSE 8080
+RUN yarn install
+COPY ./appplication .
+ENV NODE_ENV production
+RUN yarn build
+
+EXPOSE 1337
+
+CMD ["yarn", "start"]

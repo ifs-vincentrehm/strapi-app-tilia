@@ -31,3 +31,5 @@
 ### VS Code ###
 .devcontainer
 .vscode
+
+**/node_modules

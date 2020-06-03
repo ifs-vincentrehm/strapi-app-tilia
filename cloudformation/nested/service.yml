@@ -118,7 +118,7 @@ Resources:
       HealthCheckGracePeriodSeconds: 60
       LoadBalancers:
         - ContainerName: !Sub "ifs-alpha-${Environment}-${Application}-strapi"
-          ContainerPort: 8080
+          ContainerPort: 1337
           TargetGroupArn: !Ref TargetGroup
 
   TaskDefinitionStrapi:
@@ -132,7 +132,7 @@ Resources:
           Image: !Ref URIDockerImage
           Memory: 1024
           PortMappings:
-            - ContainerPort: 8080
+            - ContainerPort: 1337
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -147,55 +147,6 @@ Resources:
               Value: !Ref DBName
             - Name: DATABASE_USERNAME
               Value: !Ref DBUsername
-            # - Name: WP_ENDPOINT
-            #   Value: !Ref WpEndPoint
-            # - Name: WORDPRESS_EMAIL
-            #   Value: !Ref WpAdminMail
-            # - Name: WORDPRESS_PASSWORD
-            #   Value: !Ref WpAdminPwd
-          # Secrets:
-          #   - Name: WORDPRESS_DATABASE_PASSWORD
-          #     ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${Environment}-${Application}-db-password"
-      # Volumes:
-      #   - Name: my-efs
-      #     DockerVolumeConfiguration:
-      #       #            Autoprovision: true
-      #       Scope: "task"
-      #       Driver: "local"
-      #       DriverOpts:
-      #         type: "nfs"
-      #         device: !Sub "${EfsId}.efs.${AWS::Region}.amazonaws.com:/"
-      #         o: !Sub "addr=${EfsId}.efs.eu-central-1.amazonaws.com,nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport"
-
-        
-  # TaskDefinitionRollbackWP:
-  #   Type: AWS::ECS::TaskDefinition
-  #   Properties:
-  #     Family: !Sub "${Environment}-${Application}-rollback"
-  #     ExecutionRoleArn: !GetAtt EcsTaskExecutionRole.Arn
-  #     ContainerDefinitions:
-  #       - Name: !Sub "ifs-alpha-${Environment}-${Application}-wp-rollback"
-  #         Essential: true
-  #         Image: !Ref URIRollbackDockerImage
-  #         Memory: 1024
-  #         LogConfiguration:
-  #           LogDriver: awslogs
-  #           Options:
-  #             awslogs-group: !Ref AWS::StackName
-  #             awslogs-region: !Ref AWS::Region
-  #         MountPoints:
-  #           - ContainerPath: "/mnt/efs_drive/public/"
-  #             SourceVolume: my-efs
-  #     Volumes:
-  #       - Name: my-efs
-  #         DockerVolumeConfiguration:
-  #           Scope: "task"
-  #           Driver: "local"
-  #           DriverOpts:
-  #             type: "nfs"
-  #             device: !Sub "${EfsId}.efs.${AWS::Region}.amazonaws.com:/"
-  #             o: !Sub "addr=${EfsId}.efs.eu-central-1.amazonaws.com,nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport"
-        
 
   CloudWatchLogsGroup:
     Type: AWS::Logs::LogGroup
@@ -208,7 +159,7 @@ Resources:
     Properties:
       VpcId:
         Fn::ImportValue: !Sub "${VPCStackName}-VPCID"
-      Port: 8080
+      Port: 1337
       Protocol: HTTP
       Matcher:
         HttpCode: 200-302
@@ -217,13 +168,6 @@ Resources:
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 119
       HealthyThresholdCount: 2
-#      TargetGroupAttributes:
-#        - Key: stickiness.enabled
-#          Value: true
-#        - Key: stickiness.type
-#          Value: lb_cookie
-#        - Key: stickiness.lb_cookie.duration_seconds
-#          Value: 86400
 
   ListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule

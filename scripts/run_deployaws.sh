@@ -296,7 +296,7 @@ check_stack_status ${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${TEMPLATE} ${LAMBD
 ###################################################
 ## Deploy Docker Repository
 ###################################################
-docker build -t ${PREFIX_REPO_ECR}/${APPLICATION_NAME} .
+docker build -t ${PREFIX_REPO_ECR}/${APPLICATION_NAME} --no-cache.
 
 REPO_ECR_NAME=$(aws ecr describe-repositories --region ${REGION} --repository-name ${PREFIX_REPO_ECR}/${APPLICATION_NAME} | jq -r .repositories[].repositoryUri)
 if [[ -z "${REPO_ECR_NAME}" ]]; then
