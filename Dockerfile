@@ -19,8 +19,7 @@ FROM strapi/base
 WORKDIR /my-path
 
 
-COPY ./appplication/package.json ./
-
+COPY ./application/package.json ./
  
 RUN yarn install
 COPY ./appplication .
