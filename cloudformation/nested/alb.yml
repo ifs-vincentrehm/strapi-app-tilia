@@ -66,13 +66,6 @@ Resources:
         Fn::ImportValue: !Sub "${VPCStackName}-VPCID"
       Port: 80
       Protocol: HTTP
-    TargetGroupAttributes:
-       - Key: stickiness.enabled
-         Value: true
-       - Key: stickiness.type
-         Value: lb_cookie
-       - Key: stickiness.lb_cookie.duration_seconds
-         Value: 86400
 
   SecurityGroupExecutionRole:
     Type: AWS::IAM::Role
