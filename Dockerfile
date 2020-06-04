@@ -22,7 +22,7 @@ WORKDIR /my-path
 COPY ./application/package.json ./
  
 RUN yarn install
-COPY ./appplication .
+COPY ./application .
 ENV NODE_ENV production
 RUN yarn build
 
