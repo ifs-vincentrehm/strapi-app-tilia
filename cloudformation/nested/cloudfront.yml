@@ -59,7 +59,7 @@ Resources:
           LambdaFunctionAssociations:
             - Fn::If: [UseBasicAuth, {EventType: 'viewer-request', LambdaFunctionARN: !Ref LambdaBasicAuthVersion }, !Ref "AWS::NoValue"]
             - EventType: 'origin-response'
-              LambdaFunctionARN: !Ref LambdaSecurityVersion
+              LambdaFunctionARN: !Ref   
           TargetOriginId: myCustomOrigin
           SmoothStreaming: false
           ForwardedValues:
