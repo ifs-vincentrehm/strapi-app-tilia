@@ -459,7 +459,7 @@ workflows:
       #         only:
       #           - develop
       - job_deploy_in_dev_environment:
-          context: SupportIntegration
+          context: Colivme-int
           # requires:
           #   - job_scancloudformation_in_dev_environment
           #   - job_scansonar_in_dev_environment
