@@ -56,10 +56,10 @@ Resources:
           - PATCH
           - PUT
           Compress: true
-          LambdaFunctionAssociations:
-            - Fn::If: [UseBasicAuth, {EventType: 'viewer-request', LambdaFunctionARN: !Ref LambdaBasicAuthVersion }, !Ref "AWS::NoValue"]
-            - EventType: 'origin-response'
-              LambdaFunctionARN: !Ref   
+          # LambdaFunctionAssociations:
+          #   - Fn::If: [UseBasicAuth, {EventType: 'viewer-request', LambdaFunctionARN: !Ref LambdaBasicAuthVersion }, !Ref "AWS::NoValue"]
+          #   - EventType: 'origin-response'
+          #     LambdaFunctionARN: !Ref LambdaSecurityVersion
           TargetOriginId: myCustomOrigin
           SmoothStreaming: false
           ForwardedValues:
