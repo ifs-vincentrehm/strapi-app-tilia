@@ -81,7 +81,7 @@ Resources:
         Aliases:
           - Fn::Join:
               - "."
-              - - 'blog'
+              - - 'blog-api'
                 - Fn::ImportValue:
                     !Sub "${HostedZoneStackName}-DomainName"
 
@@ -103,7 +103,7 @@ Resources:
       Name:
         Fn::Join:
           - "."
-          - - 'blog'
+          - - 'blog-api'
             - Fn::ImportValue:
                 !Sub "${HostedZoneStackName}-DomainName"
       Type: A
