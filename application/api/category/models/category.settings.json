@@ -14,6 +14,10 @@
     },
     "slug": {
       "type": "string"
+    },
+    "articles": {
+      "via": "categories",
+      "collection": "article"
     }
   }
 }
