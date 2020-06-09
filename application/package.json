@@ -1,5 +1,5 @@
 {
-  "name": "strapi-colivme",
+  "name": "colivme",
   "private": true,
   "version": "0.1.0",
   "description": "A Strapi application",
@@ -11,23 +11,26 @@
   },
   "devDependencies": {},
   "dependencies": {
-    "strapi": "3.0.0",
-    "strapi-admin": "3.0.0",
-    "strapi-utils": "3.0.0",
-    "strapi-plugin-content-type-builder": "3.0.0",
-    "strapi-plugin-content-manager": "3.0.0",
-    "strapi-plugin-users-permissions": "3.0.0",
-    "strapi-plugin-email": "3.0.0",
-    "strapi-plugin-upload": "3.0.0",
-    "strapi-connector-bookshelf": "3.0.0",
     "knex": "<0.20.0",
-    "sqlite3": "latest"
+    "pg": "latest",
+    "slugify": "^1.4.0",
+    "strapi": "3.0.1",
+    "strapi-admin": "3.0.1",
+    "strapi-connector-bookshelf": "3.0.1",
+    "strapi-plugin-content-manager": "3.0.1",
+    "strapi-plugin-content-type-builder": "3.0.1",
+    "strapi-plugin-documentation": "^3.0.1",
+    "strapi-plugin-email": "3.0.1",
+    "strapi-plugin-upload": "3.0.1",
+    "strapi-plugin-users-permissions": "3.0.1",
+    "strapi-provider-upload-cloudinary": "^3.0.0",
+    "strapi-utils": "3.0.1"
   },
   "author": {
     "name": "A Strapi developer"
   },
   "strapi": {
-    "uuid": "dd6689d4-3298-409c-8670-1ae00249ace4"
+    "uuid": "bd8dae36-a18d-4dc8-bd62-7f2c04c85513"
   },
   "engines": {
     "node": ">=10.0.0",
