@@ -147,6 +147,8 @@ Resources:
               Value: !Ref DBName
             - Name: DATABASE_USERNAME
               Value: !Ref DBUsername
+            - Name: DATABASE_PASSWORD
+              Value: !Ref DBUserPassword
 
   CloudWatchLogsGroup:
     Type: AWS::Logs::LogGroup
