@@ -47,14 +47,15 @@ Parameters:
   DBUserPassword:
     Type: 'AWS::SSM::Parameter::Value<String>'
     NoEcho: True
-  # WpEndPoint:
-  #   Type: String
-  # WpAdminMail:
-  #   Type: 'AWS::SSM::Parameter::Value<String>'
-  # WpAdminPwd:
-  #   Type: 'AWS::SSM::Parameter::Value<String>'
-  # EfsId:
-  #   Type: String
+  CloudinaryApiKey:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    NoEcho: True
+  CloudinaryApiSecret:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    NoEcho: True
+  CloudinaryCloudName:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    NoEcho: True
   ClusterName:
     Type: String
   ECSHostSecurityGroup:
@@ -149,7 +150,12 @@ Resources:
               Value: !Ref DBUsername
             - Name: DATABASE_PASSWORD
               Value: !Ref DBUserPassword
-
+            - Name: CLOUD_NAME
+              Value: !Ref CloudinaryCloudName
+            - Name: CLOUD_API_KEY
+              Value: !Ref CloudinaryApiKey
+            - Name: CLOUD_SECRET
+              Value: !Ref CloudinaryApiSecret
   CloudWatchLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:

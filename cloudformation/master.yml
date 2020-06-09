@@ -33,6 +33,12 @@ Parameters:
     Type: String
   DBUserPassword:
     Type: String
+  CloudinaryApiKey:
+    Type: String
+  CloudinaryApiSecret:
+    Type: String
+  CloudinaryCloudName:
+    Type: String
   DBBackupRetentionPeriod:
     Type: String
   DBStorageEncryption:
@@ -204,6 +210,9 @@ Resources:
         DBName: !Ref DBName
         DBUsername: !Ref DBUsername
         DBUserPassword: !Ref DBUserPassword
+        CloudinaryApiKey: !Ref CloudinaryApiKey
+        CloudinaryApiSecret: !Ref CloudinaryApiSecret
+        CloudinaryCloudName: !Ref CloudinaryCloudName
         URIDockerImage: !Ref URIDockerImage
         URIRollbackDockerImage: !Ref URIRollbackDockerImage
         LBPriority: !Ref LBPriority

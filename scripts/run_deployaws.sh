@@ -361,7 +361,22 @@ aws s3 cp cloudformation/nested/ s3://${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-
 
 # Deploy nested satck
 echo "Let's deploy the master cloudformation file : ${TARGET_ENVIRONMENT}"
-    
+
+CLOUDINARY_API_KEY_KEY="${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${SUFFIX_CLOUDINARY_API_KEY}"
+CLOUDINARY_API_SECRET_KEY="${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${SUFFIX_CLOUDINARY_API_SECRET}"
+CLOUDINARY_CLOUDNAME_KEY="${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-${SUFFIX_CLOUDINARY_CLOUDNAME}"
+
+CLOUDINARY_API_KEY=$(aws ssm get-parameter --name "${CLOUDINARY_API_KEY_KEY}" --region "${REGION}" | jq -r ".Parameter.Value")
+CLOUDINARY_API_SECRET=$(aws ssm get-parameter --name "${CLOUDINARY_API_SECRET_KEY}" --region "${REGION}" | jq -r ".Parameter.Value")
+CLOUDINARY_CLOUDNAME=$(aws ssm get-parameter --name "${CLOUDINARY_CLOUDNAME_KEY}" --region "${REGION}" | jq -r ".Parameter.Value")
+
+# Si les parameters n'existent pas on les cree et on les pousse dans parameter store
+if [[ -z "$CLOUDINARY_API_KEY" ]] && [[ -z "$CLOUDINARY_API_SECRET" ]] && [[ -z "$CLOUDINARY_CLOUDNAME" ]] ; then
+ echo "Parameter store does not contain value(s) for $CLOUDINARY_API_KEY_KEY or $CLOUDINARY_API_SECRET_KEY or $CLOUDINARY_CLOUDNAME_KEY"
+ exit 12
+fi
+
+
 aws cloudformation deploy \
     --template-file cloudformation/master.yml \
     --stack-name ${TARGET_ENVIRONMENT}-${APPLICATION_NAME} \
@@ -391,6 +406,9 @@ aws cloudformation deploy \
         DBName=${PS_DB_NAME_KEY} \
         DBUsername=${PS_DB_USERNAME_KEY} \
         DBUserPassword=${PS_DB_USER_PASSWORD_KEY} \
+        CloudinaryApiKey=${CLOUDINARY_API_KEY_KEY} \
+        CloudinaryApiSecret=${CLOUDINARY_API_SECRET_KEY} \
+        CloudinaryCloudName=${CLOUDINARY_CLOUDNAME_KEY} \
         DBStorageEncryption=${DB_STORAGEENCRYPTION} \
         DBBackupRetentionPeriod=${DB_BACKUPRETENTIONPERIOD} \
         AWSServiceRoleForRDSArn=${aws_service_role_for_rds_arn} \
