@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   utils-orb: bivwak/utils-orb@0.0.6
 
+
 references:
 
   awsclimaven_image: &awsclimaven_image
@@ -459,7 +460,7 @@ workflows:
       #         only:
       #           - develop
       - job_deploy_in_dev_environment:
-          context: Colivme-int
+          context: SupportIntegration
           # requires:
           #   - job_scancloudformation_in_dev_environment
           #   - job_scansonar_in_dev_environment
@@ -467,7 +468,7 @@ workflows:
           filters:
             branches:
               only:
-                - develop
+                - security
       # - job_nrlighttest_in_dev_environment:
       #     context: SupportIntegration
       #     requires:

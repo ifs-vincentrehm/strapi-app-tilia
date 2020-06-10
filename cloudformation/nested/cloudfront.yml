@@ -56,10 +56,10 @@ Resources:
           - PATCH
           - PUT
           Compress: true
-          # LambdaFunctionAssociations:
+          LambdaFunctionAssociations:
           #   - Fn::If: [UseBasicAuth, {EventType: 'viewer-request', LambdaFunctionARN: !Ref LambdaBasicAuthVersion }, !Ref "AWS::NoValue"]
-          #   - EventType: 'origin-response'
-          #     LambdaFunctionARN: !Ref LambdaSecurityVersion
+            - EventType: 'origin-response'
+              LambdaFunctionARN: !Ref LambdaSecurityVersion
           TargetOriginId: myCustomOrigin
           SmoothStreaming: false
           ForwardedValues:
@@ -107,26 +107,3 @@ Resources:
             - Fn::ImportValue:
                 !Sub "${HostedZoneStackName}-DomainName"
       Type: A
-
-
-  # DNSRecorSubDomain:
-  #   Type: AWS::Route53::RecordSet
-  #   Properties:
-  #     AliasTarget:
-  #       DNSName:
-  #         Fn::Join:
-  #           - ''
-  #           - - Fn::GetAtt:
-  #                 - myDistribution
-  #                 - DomainName
-  #       EvaluateTargetHealth: False
-  #       HostedZoneId: !Ref AliasTargetHostedZoneId
-  #     HostedZoneId:
-  #       Fn::ImportValue: !Sub "${HostedZoneStackName}-PublicZoneId"
-  #     Name:
-  #       Fn::Join:
-  #         - "."
-  #         - - 'blog'
-  #           - Fn::ImportValue:
-  #               !Sub "${HostedZoneStackName}-DomainName"
-  #     Type: A
