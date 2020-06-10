@@ -371,10 +371,10 @@ CLOUDINARY_API_SECRET=$(aws ssm get-parameter --name "${CLOUDINARY_API_SECRET_KE
 CLOUDINARY_CLOUDNAME=$(aws ssm get-parameter --name "${CLOUDINARY_CLOUDNAME_KEY}" --region "${REGION}" | jq -r ".Parameter.Value")
 
 # Si les parameters n'existent pas on les cree et on les pousse dans parameter store
-if [[ -z "$CLOUDINARY_API_KEY" ]] && [[ -z "$CLOUDINARY_API_SECRET" ]] && [[ -z "$CLOUDINARY_CLOUDNAME" ]] ; then
- echo "Parameter store does not contain value(s) for $CLOUDINARY_API_KEY_KEY or $CLOUDINARY_API_SECRET_KEY or $CLOUDINARY_CLOUDNAME_KEY"
- exit 12
-fi
+# if [[ -z "$CLOUDINARY_API_KEY" ]] && [[ -z "$CLOUDINARY_API_SECRET" ]] && [[ -z "$CLOUDINARY_CLOUDNAME" ]] ; then
+#  echo "Parameter store does not contain value(s) for $CLOUDINARY_API_KEY_KEY or $CLOUDINARY_API_SECRET_KEY or $CLOUDINARY_CLOUDNAME_KEY"
+#  exit 12
+# fi
 
 
 aws cloudformation deploy \
