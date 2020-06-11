@@ -370,11 +370,10 @@ CLOUDINARY_API_KEY=$(aws ssm get-parameter --name "${CLOUDINARY_API_KEY_KEY}" --
 CLOUDINARY_API_SECRET=$(aws ssm get-parameter --name "${CLOUDINARY_API_SECRET_KEY}" --region "${REGION}" | jq -r ".Parameter.Value")
 CLOUDINARY_CLOUDNAME=$(aws ssm get-parameter --name "${CLOUDINARY_CLOUDNAME_KEY}" --region "${REGION}" | jq -r ".Parameter.Value")
 
-# Si les parameters n'existent pas on les cree et on les pousse dans parameter store
-# if [[ -z "$CLOUDINARY_API_KEY" ]] && [[ -z "$CLOUDINARY_API_SECRET" ]] && [[ -z "$CLOUDINARY_CLOUDNAME" ]] ; then
-#  echo "Parameter store does not contain value(s) for $CLOUDINARY_API_KEY_KEY or $CLOUDINARY_API_SECRET_KEY or $CLOUDINARY_CLOUDNAME_KEY"
-#  exit 12
-# fi
+if [[ -z "$CLOUDINARY_API_KEY" ]] && [[ -z "$CLOUDINARY_API_SECRET" ]] && [[ -z "$CLOUDINARY_CLOUDNAME" ]] ; then
+ echo "Parameter store does not contain value(s) for $CLOUDINARY_API_KEY_KEY or $CLOUDINARY_API_SECRET_KEY or $CLOUDINARY_CLOUDNAME_KEY"
+ exit 12
+fi
 
 
 aws cloudformation deploy \
@@ -443,7 +442,8 @@ aws cloudformation deploy \
 
     # Invoke lamba
     function_name=$(aws cloudformation list-exports --region ${REGION} | jq -r ".Exports[] | select((.Name|index(\""${TARGET_ENVIRONMENT}-${APPLICATION_NAME}-LambdaInitSG"\")))" | jq -r ".Value" )
-    aws lambda invoke --function-name $function_name --invocation-type 'Event'  --payload '{"url":"https://ip-ranges.amazonaws.com/ip-ranges.json"}' outputfile.txt
-
+    echo $function_name
+    echo $(aws lambda invoke --function-name $function_name --invocation-type 'Event'  --payload '{"url":"https://ip-ranges.amazonaws.com/ip-ranges.json"}' outputfile.txt)
+    
 
 
