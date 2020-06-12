@@ -109,8 +109,10 @@ Resources:
         Application: !Ref Application
         VPCStackName: !Ref VPCStackName
         CertificateArn: !Ref CertificateArn
-        CloudFrontGlobalSecurityGroup: !GetAtt SGStack.Outputs.CloudFrontGlobalSecurityGroup
-        CloudFrontRegionGSecurityGroup: !GetAtt SGStack.Outputs.CloudFrontRegionGSecurityGroup
+        CloudFrontGlobalSecurityGroup1: !GetAtt SGStack.Outputs.CloudFrontGlobalSecurityGroup1
+        CloudFrontRegionGSecurityGroup1: !GetAtt SGStack.Outputs.CloudFrontRegionGSecurityGroup1
+        CloudFrontGlobalSecurityGroup2: !GetAtt SGStack.Outputs.CloudFrontGlobalSecurityGroup2
+        CloudFrontRegionGSecurityGroup2: !GetAtt SGStack.Outputs.CloudFrontRegionGSecurityGroup2
         ApplicationRegion: !Ref ApplicationRegion
         HostedZoneStackName: !Ref HostedZoneStackName
         LoadbalancerHostedZoneID: !Ref LoadbalancerHostedZoneID
@@ -123,18 +125,6 @@ Resources:
         Environment: !Ref Environment
         Application: !Ref Application
         VPCStackName: !Ref VPCStackName
-
-
-  # EFSStack:
-  #   Type: "AWS::CloudFormation::Stack"
-  #   Properties:
-  #     TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref Environment ,'-', !Ref Application, '-nestedtemplates/' ,'efs.yml' ]]
-  #     Parameters:
-  #       Environment: !Ref Environment
-  #       Application: !Ref Application
-  #       VPCStackName: !Ref VPCStackName
-  #       ECSHostSecurityGroup: !GetAtt SGStack.Outputs.ECSHostSecurityGroup
-
 
   CFStack:
     Type: "AWS::CloudFormation::Stack"
@@ -223,9 +213,6 @@ Resources:
         ScaleInCooldown: !Ref ScaleInCooldown
         MinInstanceCount: !Ref MinInstanceCount
         DesiredInstanceCount: !Ref DesiredInstanceCount
-        # WpEndPoint:  !Ref WpEndPoint
-        # WpAdminMail: !Ref WpAdminMail
-        # WpAdminPwd: !Ref WpAdminPwd
 
 Outputs:
   ECSHostSecurityGroup:

@@ -207,12 +207,20 @@ Outputs:
     Description: A reference to the security group for ECS hosts
     Value: !Ref ECSHostSecurityGroup
 
-  CloudFrontGlobalSecurityGroup:
+  CloudFrontGlobalSecurityGroup1:
     Description: A reference to the security group from CloudFront and AWS WAF into ALB
-    Value: !Ref CloudFrontGlobal443SecurityGroup
+    Value: !Ref CloudFrontGlobal443SecurityGroup1
 
-  CloudFrontRegionGSecurityGroup:
+  CloudFrontRegionGSecurityGroup1:
     Description: A reference to the security group from CloudFront and AWS WAF into ALB
-    Value: !Ref CloudFrontRegion443GSecurityGroup
+    Value: !Ref CloudFrontRegion443GSecurityGroup1
+
+  CloudFrontGlobalSecurityGroup1:
+    Description: A reference to the security group from CloudFront and AWS WAF into ALB
+    Value: !Ref CloudFrontGlobal443SecurityGroup2
+
+  CloudFrontRegionGSecurityGroup1:
+    Description: A reference to the security group from CloudFront and AWS WAF into ALB
+    Value: !Ref CloudFrontRegion443GSecurityGroup2
 
 
