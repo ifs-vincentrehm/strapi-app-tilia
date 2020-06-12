@@ -219,7 +219,7 @@ Outputs:
     Description: A reference to the security group from CloudFront and AWS WAF into ALB
     Value: !Ref CloudFrontGlobal443SecurityGroup2
 
-  CloudFrontRegionGSecurityGroup1:
+  CloudFrontRegionGSecurityGroup2:
     Description: A reference to the security group from CloudFront and AWS WAF into ALB
     Value: !Ref CloudFrontRegion443GSecurityGroup2
 
