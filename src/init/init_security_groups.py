@@ -10,9 +10,10 @@ SERVICE = "CLOUDFRONT"
 # Ports your application uses that need inbound permissions from the service for
 INGRESS_PORTS = {'Https': 443}
 # Tags which identify the security groups you want to update
-SECURITY_GROUP_TAG_FOR_GLOBAL_HTTPS = {'Name': 'cloudfront_g', 'AutoUpdate': 'true', 'Protocol': 'https'}
-SECURITY_GROUP_TAG_FOR_REGION_HTTPS = {'Name': 'cloudfront_r', 'AutoUpdate': 'true', 'Protocol': 'https'}
-
+SECURITY_GROUP_TAG_FOR_GLOBAL_HTTPS_1 = {'Name': 'cloudfront_g_1', 'AutoUpdate': 'true', 'Protocol': 'https'}
+SECURITY_GROUP_TAG_FOR_REGION_HTTPS_1 = {'Name': 'cloudfront_r_1', 'AutoUpdate': 'true', 'Protocol': 'https'}
+SECURITY_GROUP_TAG_FOR_GLOBAL_HTTPS_2 = {'Name': 'cloudfront_g_2', 'AutoUpdate': 'true', 'Protocol': 'https'}
+SECURITY_GROUP_TAG_FOR_REGION_HTTPS_2 = {'Name': 'cloudfront_r_2', 'AutoUpdate': 'true', 'Protocol': 'https'}
 
 def lambda_init_handler(event, context):
 
@@ -25,7 +26,14 @@ def lambda_init_handler(event, context):
     # extract the service ranges
     global_cf_ranges = get_ranges_for_service(ip_ranges, SERVICE, "GLOBAL")
     region_cf_ranges = get_ranges_for_service(ip_ranges, SERVICE, "REGION")
-    ip_ranges = {"GLOBAL": global_cf_ranges, "REGION": region_cf_ranges}
+
+    # deviding into to subranges to avoid over reaching security group limits (canbe inhanced with an arbitrary number of ranges)
+    global_ranges_1 = global_cf_ranges[:round(len(global_cf_ranges) / 2)]
+    global_ranges_2 = global_cf_ranges[round(len(global_cf_ranges) / 2):]
+    region_ranges_1 = region_cf_ranges[:round(len(region_cf_ranges) / 2)]
+    region_ranges_2 = region_cf_ranges[round(len(region_cf_ranges) / 2):]
+
+    ip_ranges = {"GLOBAL_1": global_ranges_1, "GLOBAL_2": global_ranges_2, "REGION_1": region_ranges_1, "REGION_2": region_ranges_2}
 
     # update the security groups
     result = update_security_groups(ip_ranges)
@@ -39,33 +47,47 @@ def get_ranges_for_service(ranges, service, subset):
         if prefix['service'] == service and ((subset == prefix['region'] and subset == "GLOBAL") or (
                 subset != 'GLOBAL' and prefix['region'] != 'GLOBAL')):
             service_ranges.append(prefix['ip_prefix'])
-
+    
     return service_ranges
 
 
 def update_security_groups(new_ranges):
     client = boto3.client('ec2', region_name=REGION_NAME)
 
-    global_https_group = get_security_groups_for_update(client, SECURITY_GROUP_TAG_FOR_GLOBAL_HTTPS)
-    region_https_group = get_security_groups_for_update(client, SECURITY_GROUP_TAG_FOR_REGION_HTTPS)
+    global_https_group_1 = get_security_groups_for_update(client, SECURITY_GROUP_TAG_FOR_GLOBAL_HTTPS_1)
+    region_https_group_1 = get_security_groups_for_update(client, SECURITY_GROUP_TAG_FOR_REGION_HTTPS_1)
+    global_https_group_2 = get_security_groups_for_update(client, SECURITY_GROUP_TAG_FOR_GLOBAL_HTTPS_2)
+    region_https_group_2 = get_security_groups_for_update(client, SECURITY_GROUP_TAG_FOR_REGION_HTTPS_2)
 
     result = list()
     global_https_updated = 0
     region_https_updated = 0
 
-    for group in global_https_group:
-        if update_security_group(client, group, new_ranges["GLOBAL"], INGRESS_PORTS['Https']):
+    for group in global_https_group_1:
+        if update_security_group(client, group, new_ranges["GLOBAL_1"], INGRESS_PORTS['Https']):
             global_https_updated += 1
             result.append('Updated ' + group['GroupId'])
-    for group in region_https_group:
-        if update_security_group(client, group, new_ranges["REGION"], INGRESS_PORTS['Https']):
+    for group in global_https_group_2:
+        if update_security_group(client, group, new_ranges["GLOBAL_2"], INGRESS_PORTS['Https']):
+            global_https_updated += 1
+            result.append('Updated ' + group['GroupId'])
+    for group in region_https_group_1:
+        if update_security_group(client, group, new_ranges["REGION_1"], INGRESS_PORTS['Https']):
+            region_https_updated += 1
+            result.append('Updated ' + group['GroupId'])
+    for group in region_https_group_2:
+        if update_security_group(client, group, new_ranges["REGION_2"], INGRESS_PORTS['Https']):
             region_https_updated += 1
             result.append('Updated ' + group['GroupId'])
 
     result.append('Updated ' + str(global_https_updated) + ' of ' + str(
-        len(global_https_group)) + ' CloudFront_g HttpsSecurityGroups')
+        len(global_https_group_1)) + ' CloudFront_g_1 HttpsSecurityGroups')
     result.append('Updated ' + str(region_https_updated) + ' of ' + str(
-        len(region_https_group)) + ' CloudFront_r HttpsSecurityGroups')
+        len(region_https_group_1)) + ' CloudFront_r_1 HttpsSecurityGroups')
+    result.append('Updated ' + str(global_https_updated) + ' of ' + str(
+        len(global_https_group_1)) + ' CloudFront_g_2 HttpsSecurityGroups')
+    result.append('Updated ' + str(region_https_updated) + ' of ' + str(
+        len(region_https_group_1)) + ' CloudFront_r_2 HttpsSecurityGroups')
 
     return result
 
