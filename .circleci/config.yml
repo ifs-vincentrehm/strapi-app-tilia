@@ -3,7 +3,6 @@ version: 2.1
 orbs:
   utils-orb: bivwak/utils-orb@0.0.6
 
-
 references:
 
   awsclimaven_image: &awsclimaven_image
@@ -384,170 +383,18 @@ jobs:
 workflows:
   version: 2
 
-  workflow_build_test:
-    jobs:
-      - job_scancloudformation_in_test_environment:
-          context: SupportIntegration
-          filters:
-            branches:
-              only:
-                - test
-      - job_scansonar_in_test_environment:
-          context: SupportIntegration
-          filters:
-            branches:
-              only:
-                - test
-      - job_unitarytest_in_test_environment:
-          context: SupportIntegration
-          filters:
-            branches:
-              only:
-                - test
-      - job_deploy_in_test_environment:
-          context: SupportIntegration
-
-          requires:
-            - job_scancloudformation_in_test_environment
-            - job_scansonar_in_test_environment
-            - job_unitarytest_in_test_environment
-          filters:
-            branches:
-              only:
-                - test
-      - job_nrlighttest_in_test_environment:
-          context: SupportIntegration
-          requires:
-            - job_deploy_in_test_environment
-          filters:
-            branches:
-              only:
-                - test
-      - job_healthchecktest_in_test_environment:
-          context: SupportIntegration
-          requires:
-            - job_nrlighttest_in_test_environment
-          filters:
-            branches:
-              only:
-                - test
-      # - utils-orb/workflow_collector:
-      #     project-name: "colivme"
-      #     context: pipeline-analytics-release
-      #     filters:
-      #       branches:
-      #         only:
-      #         - test
 
   workflow_build_develop:
     jobs:
-      # - job_scancloudformation_in_dev_environment:
-      #     context: SupportIntegration
-      #     filters:
-      #       branches:
-      #         only:
-      #           - develop
-      # - job_scansonar_in_dev_environment:
-      #     context: SupportIntegration
-      #     filters:
-      #       branches:
-      #         only:
-      #           - develop
-      # - job_unitarytest_in_dev_environment:
-      #     context: SupportIntegration
-      #     filters:
-      #       branches:
-      #         only:
-      #           - develop
       - job_deploy_in_dev_environment:
-          context: SupportIntegration
-          # requires:
-          #   - job_scancloudformation_in_dev_environment
-          #   - job_scansonar_in_dev_environment
-          #   - job_unitarytest_in_dev_environment
+          context:  Colivme-int
+
           filters:
             branches:
               only:
-                - security
-      # - job_nrlighttest_in_dev_environment:
-      #     context: SupportIntegration
-      #     requires:
-      #       - job_deploy_in_dev_environment
-      #     filters:
-      #       branches:
-      #         only:
-      #           - develop
-      # - utils-orb/workflow_collector:
-      #     project-name: "colivme"
-      #     context: pipeline-analytics-release
-      #     filters:
-      #       branches:
-      #         only:
-      #         - develop
+                - develop
 
   workflow_build_release:
-    jobs:
-      - job_scancloudformation_in_staging_environment:
-          context: Colivme-cdd
-          filters:
-            branches:
-              only:
-                - master
-      - job_scansonar_in_staging_environment:
-          context: Colivme-cdd
-          filters:
-            branches:
-              only:
-                - master
-      - job_unitarytest_in_staging_environment:
-          context: Colivme-cdd
-          filters:
-            branches:
-              only:
-                - master
-      - job_deploy_in_staging_environment:
-          context: Colivme-cdd
-          requires:
-            - job_scancloudformation_in_staging_environment
-            - job_scansonar_in_staging_environment
-            - job_unitarytest_in_staging_environment
-          filters:
-            branches:
-              only:
-                - master
-      - job_nrfulltest_in_staging_environment:
-          context: Colivme-cdd
-          requires:
-            - job_deploy_in_staging_environment
-          filters:
-            branches:
-              only:
-                - master
-      - request_merge_to_prod:
-          type: approval
-          requires:
-            - job_nrfulltest_in_staging_environment
-            - job_deploy_in_staging_environment
-          filters:
-            branches:
-              only:
-                - master
-      #    - job_healthchecktest_in_staging_environment:
-      #        context : ReferenceArchitecturesCandidate
-      #        requires:
-      #        - job_nrfulltest_in_staging_environment
-      #        filters:
-      #          branches:
-      #            only:
-      #            - master
-      #    - job_qualitygates_in_staging_environment:
-      #        context : ReferenceArchitecturesCandidate
-      #        requires:
-      #        - job_healthchecktest_in_staging_environment
-      #        filters:
-      #          branches:
-      #            only:
-      #            - master
       - job_deploy_in_release_environment:
           context: Colivme-rls
           requires:
@@ -556,61 +403,3 @@ workflows:
             branches:
               only:
                 - master
-      - job_deploy_in_sandbox_environment:
-          context: Colivme-sbx
-          requires:
-            - request_merge_to_prod
-          filters:
-            branches:
-              only:
-                - master
-      # - utils-orb/workflow_collector:
-      #     project-name: "colivme"
-      #     context: pipeline-analytics-release
-      #     filters:
-      #       branches:
-      #         only:
-      #         - master
-#    - job_healthchecktest_in_release_environment:
-#        context : ReferenceArchitecturesRelease
-#        requires:
-#        - job_deploy_in_release_environment
-#        filters:
-#          branches:
-#            only:
-#            - master
-#    - job_deploy_in_sandbox_environment:
-#        context : ReferenceArchitecturesSandbox
-#        requires:
-#        - job_qualitygates_in_staging_environment
-#        filters:
-#          branches:
-#            only:
-#            - master
-#    - job_healthchecktest_in_sandbox_environment:
-#        context : ReferenceArchitecturesSandbox
-#        requires:
-#        - job_deploy_in_sandbox_environment
-#        filters:
-#          branches:
-#            only:
-#            - master
-#  nightly:
-#    triggers:
-#      - schedule:
-#          cron: "0 2 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
-#    jobs:
-#    - job_securitytests_in_staging_environment:
-#        context : ReferenceArchitecturesCandidate
-#    - job_pentests_in_staging_environment:
-#        context : ReferenceArchitecturesCandidate
-#        requires:
-#        - job_securitytests_in_staging_environment
-#    - job_performancetests_in_staging_environment:
-#        context : ReferenceArchitecturesCandidate
-#        requires:
-#        - job_pentests_in_staging_environment
