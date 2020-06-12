@@ -63,7 +63,7 @@ Resources:
           TargetOriginId: myCustomOrigin
           SmoothStreaming: false
           ForwardedValues:
-            QueryString: true
+            QueryString: true 
             Cookies:
               Forward: all
             Headers:

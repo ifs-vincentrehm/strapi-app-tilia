@@ -12,9 +12,13 @@ Parameters:
     Type: String
   VPCStackName:
     Type: String
-  CloudFrontGlobalSecurityGroup:
+  CloudFrontGlobalSecurityGroup1:
     Type: String
-  CloudFrontRegionGSecurityGroup:
+  CloudFrontRegionGSecurityGroup1:
+    Type: String
+  CloudFrontGlobalSecurityGroup2:
+    Type: String
+  CloudFrontRegionGSecurityGroup2:
     Type: String
   CertificateArn:
     Type: String
@@ -40,8 +44,10 @@ Resources:
         - ","
         - Fn::ImportValue: !Sub "${VPCStackName}-PublicSubnets"
       SecurityGroups:
-        - !Ref CloudFrontGlobalSecurityGroup
-        - !Ref CloudFrontRegionGSecurityGroup
+        - !Ref CloudFrontGlobalSecurityGroup1
+        - !Ref CloudFrontRegionGSecurityGroup1
+        - !Ref CloudFrontGlobalSecurityGroup2
+        - !Ref CloudFrontRegionGSecurityGroup2
 
   ApplicationLoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
