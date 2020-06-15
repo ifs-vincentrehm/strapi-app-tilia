@@ -383,19 +383,17 @@ jobs:
 workflows:
   version: 2
 
-
   workflow_build_develop:
     jobs:
       - job_deploy_in_dev_environment:
           context:  Colivme-int
-
           filters:
             branches:
               only:
                 - develop
-                - security
 
   workflow_build_release:
+    jobs:
       - job_deploy_in_release_environment:
           context: Colivme-rls
           filters:
