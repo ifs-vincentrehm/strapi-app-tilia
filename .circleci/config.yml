@@ -393,12 +393,11 @@ workflows:
             branches:
               only:
                 - develop
+                - security
 
   workflow_build_release:
       - job_deploy_in_release_environment:
           context: Colivme-rls
-          requires:
-            - request_merge_to_prod
           filters:
             branches:
               only:
