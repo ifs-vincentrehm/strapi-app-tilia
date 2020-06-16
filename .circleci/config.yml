@@ -165,7 +165,7 @@ jobs:
       - *run_deployaws
 
   job_deploy_in_release_environment:
-    <<: *awsclimaven_image
+    <<: *awscli_image
     environment:
       CONF_ENV: release
     steps:
