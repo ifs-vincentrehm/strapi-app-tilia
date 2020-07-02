@@ -266,3 +266,8 @@ Outputs:
     Value: !GetAtt StrapiStack.Outputs.TaskArn
     Export:
       Name: !Sub "${AWS::StackName}-TaskDefinitionArn"
+  ApiUrl:
+    Description: Url of the deployed api
+    Value: !GetAtt CFStack.Outputs.ApiUrl
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiUrl"
