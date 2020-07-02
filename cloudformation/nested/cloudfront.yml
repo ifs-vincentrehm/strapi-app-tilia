@@ -110,4 +110,4 @@ Resources:
 
 Outputs:
   ApiUrl:
-    Value: !GetAtt DNSRecordMain.Name
+    Value: !Ref DNSRecordMain
