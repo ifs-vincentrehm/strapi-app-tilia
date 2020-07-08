@@ -47,15 +47,6 @@ Parameters:
   DBUserPassword:
     Type: 'AWS::SSM::Parameter::Value<String>'
     NoEcho: True
-  CloudinaryApiKey:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    NoEcho: True
-  CloudinaryApiSecret:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    NoEcho: True
-  CloudinaryCloudName:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    NoEcho: True
   ClusterName:
     Type: String
   ECSHostSecurityGroup:
@@ -65,6 +56,12 @@ Parameters:
   InstanceRDSHostname:
     Type: String
   ListenerArn:
+    Type: String
+  InfrastructureStackName:
+    Type: String
+  AWSMediasS3Name:
+    Type: String
+  MediaBucketCloudFrontAlias:
     Type: String
 
 Resources:
@@ -150,12 +147,14 @@ Resources:
               Value: !Ref DBUsername
             - Name: DATABASE_PASSWORD
               Value: !Ref DBUserPassword
-            - Name: CLOUD_NAME
-              Value: !Ref CloudinaryCloudName
-            - Name: CLOUD_API_KEY
-              Value: !Ref CloudinaryApiKey
-            - Name: CLOUD_SECRET
-              Value: !Ref CloudinaryApiSecret
+            - Name: AWS_REGION
+              Value: !Ref AWS::Region
+            - Name: AWS_MEDIASS3_NAME
+              Value:
+                Fn::ImportValue: !Sub "${AWSMediasS3Name}"
+            - Name: AWS_MEDIAS_CLOUDFRONT_URL
+              Value:
+                Fn::ImportValue: !Sub "${MediaBucketCloudFrontAlias}"
   CloudWatchLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -220,60 +219,72 @@ Resources:
       Policies:
         - PolicyName: !Sub "ecs-service-${AWS::StackName}"
           PolicyDocument:
-            {
-              "Version": "2012-10-17",
-              "Statement": [{
-                              "Effect": "Allow",
-                              "Action": [
-                                "ec2:AuthorizeSecurityGroupIngress",
-                                "ec2:Describe*",
-                                "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
-                                "elasticloadbalancing:Describe*",
-                                "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
-                                "elasticloadbalancing:DeregisterTargets",
-                                "elasticloadbalancing:DescribeTargetGroups",
-                                "elasticloadbalancing:DescribeTargetHealth",
-                                "elasticloadbalancing:RegisterTargets",
-                              ],
-                              "Resource": "*"
-                            }]
-            }
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ec2:AuthorizeSecurityGroupIngress'
+                  - 'ec2:Describe*'
+                  - 'elasticloadbalancing:DeregisterInstancesFromLoadBalancer'
+                  - 'elasticloadbalancing:Describe*'
+                  - 'elasticloadbalancing:RegisterInstancesWithLoadBalancer'
+                  - 'elasticloadbalancing:DeregisterTargets'
+                  - 'elasticloadbalancing:DescribeTargetGroups'
+                  - 'elasticloadbalancing:DescribeTargetHealth'
+                  - 'elasticloadbalancing:RegisterTargets'
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - 's3:PutObject'
+                  - 's3:GetObject'
+                  - 's3:AbortMultipartUpload'
+                  - 's3:ListMultipartUploadParts'
+                  - 's3:ListBucket'
+                  - 's3:ListBucketMultipartUploads'
+                  - 's3:DeleteObject'
+                  - 's3:DeleteObjectTagging'
+                  - 's3:DeleteObjectVersion'
+                  - 's3:DeleteObjectVersionTagging'
+                Resource:
+                  Fn::Join:
+                    - ""
+                    - - Fn::ImportValue: !Sub "${InfrastructureStackName}-s3-mediasArn"
+                      - "/*"
 
   EcsTaskExecutionRole:
-   Type: AWS::IAM::Role
-   Properties:
-     Path: /
-     RoleName:  !Sub "task-exec-${AWS::StackName}"
-     AssumeRolePolicyDocument:
-       Version: "2012-10-17"
-       Statement:
-         Effect: "Allow"
-         Principal:
-           Service:
-             - "ecs-tasks.amazonaws.com"
-         Action: "sts:AssumeRole"
-     Policies:
-       - PolicyName: !Sub "task-role-${AWS::StackName}-policy"
-         PolicyDocument:
-           Version: "2012-10-17"
-           Statement:
-             - Effect: "Allow"
-               Action:
-                 - ecr:GetAuthorizationToken
-                 - ecr:BatchCheckLayerAvailability
-                 - ecr:GetDownloadUrlForLayer
-                 - ecr:BatchGetImage
-                 - logs:CreateLogStream
-                 - logs:PutLogEvents
-               Resource: "*"
-       - PolicyName: !Sub "ecs-secrets-${AWS::StackName}-policy"
-         PolicyDocument:
-           Version: "2012-10-17"
-           Statement:
-             - Effect: "Allow"
-               Action:
-                 - ssm:GetParameters
-               Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${Environment}-${Application}-db-password"
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      RoleName:  !Sub "task-exec-${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: "Allow"
+          Principal:
+            Service:
+              - "ecs-tasks.amazonaws.com"
+          Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: !Sub "task-role-${AWS::StackName}-policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+        - PolicyName: !Sub "ecs-secrets-${AWS::StackName}-policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ssm:GetParameters
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${Environment}-${Application}-db-password"
 
 Outputs:
   TaskArn:

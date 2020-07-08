@@ -1,9 +1,10 @@
 {
-    "provider": "cloudinary",
+    "provider": "custom-aws-s3",
     "providerOptions": {
-      "cloud_name": "${process.env.CLOUD_NAME}",
-      "api_key": "${process.env.CLOUD_API_KEY}",
-      "api_secret": "${process.env.CLOUD_SECRET}",
-      "folder": "colivme"
+      "region": "${process.env.AWS_REGION}",
+      "params": {
+        "Bucket": "${process.env.AWS_MEDIASS3_NAME}"
+      },
+      "mediasCloudfrontUrl": "${process.env.AWS_MEDIAS_CLOUDFRONT_URL}"
     }
   }

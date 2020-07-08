@@ -13,7 +13,9 @@ fi
 ###################################################
 ## Check prerequesite existing stacks
 ###################################################
-PREREQUESITESTACK_LIST=${VPC_STACKNAME}
+S3_STACK=${TARGET_ENVIRONMENT}-${APPLICATION_INFRASTRUCTURE_NAME}-${S3_STACKNAME}
+IFS=,
+PREREQUESITESTACK_LIST=${VPC_STACKNAME},${S3_STACK}
 MISSING_STACK=''
 
 for PREREQUESITESTACK in ${PREREQUESITESTACK_LIST}
