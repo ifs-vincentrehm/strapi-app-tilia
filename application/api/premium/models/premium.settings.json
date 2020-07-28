@@ -1,8 +1,8 @@
 {
   "kind": "collectionType",
-  "collectionName": "articles",
+  "collectionName": "premiums",
   "info": {
-    "name": "Article"
+    "name": "Premium"
   },
   "options": {
     "increments": true,
@@ -14,6 +14,10 @@
       "required": true,
       "unique": true
     },
+    "subtitle": {
+      "type": "string",
+      "required": true
+    },
     "image": {
       "model": "file",
       "via": "related",
@@ -23,19 +27,22 @@
       "plugin": "upload",
       "required": true
     },
-    "subtitle": {
-      "type": "string"
+    "picto": {
+      "model": "file",
+      "via": "related",
+      "allowedTypes": [
+        "images"
+      ],
+      "plugin": "upload",
+      "required": true
     },
     "content": {
-      "type": "richtext"
-    },
-    "slug": {
-      "type": "string",
-      "unique": true
+      "type": "richtext",
+      "required": true
     },
     "categories": {
       "collection": "category",
-      "via": "articles",
+      "via": "premiums",
       "dominant": true
     }
   }

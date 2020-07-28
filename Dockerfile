@@ -18,11 +18,9 @@ FROM strapi/base
 
 WORKDIR /my-path
 
-
-COPY ./application/package.json ./
- 
-RUN yarn install
 COPY ./application .
+
+RUN yarn install
 ENV NODE_ENV production
 RUN yarn build
 

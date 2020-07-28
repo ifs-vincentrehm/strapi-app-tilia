@@ -107,3 +107,7 @@ Resources:
             - Fn::ImportValue:
                 !Sub "${HostedZoneStackName}-DomainName"
       Type: A
+
+Outputs:
+  ApiUrl:
+    Value: !Ref DNSRecordMain

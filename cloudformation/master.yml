@@ -33,12 +33,6 @@ Parameters:
     Type: String
   DBUserPassword:
     Type: String
-  CloudinaryApiKey:
-    Type: String
-  CloudinaryApiSecret:
-    Type: String
-  CloudinaryCloudName:
-    Type: String
   DBBackupRetentionPeriod:
     Type: String
   DBStorageEncryption:
@@ -96,6 +90,12 @@ Parameters:
   ApplicationRegion:
     Type: String
   LoadbalancerHostedZoneID:
+    Type: String
+  InfrastructureStackName:
+    Type: String
+  AWSMediasS3Name:
+    Type: String
+  MediaBucketCloudFrontAlias:
     Type: String
 
 Resources:
@@ -200,9 +200,6 @@ Resources:
         DBName: !Ref DBName
         DBUsername: !Ref DBUsername
         DBUserPassword: !Ref DBUserPassword
-        CloudinaryApiKey: !Ref CloudinaryApiKey
-        CloudinaryApiSecret: !Ref CloudinaryApiSecret
-        CloudinaryCloudName: !Ref CloudinaryCloudName
         URIDockerImage: !Ref URIDockerImage
         URIRollbackDockerImage: !Ref URIRollbackDockerImage
         LBPriority: !Ref LBPriority
@@ -213,6 +210,9 @@ Resources:
         ScaleInCooldown: !Ref ScaleInCooldown
         MinInstanceCount: !Ref MinInstanceCount
         DesiredInstanceCount: !Ref DesiredInstanceCount
+        InfrastructureStackName: !Ref InfrastructureStackName
+        AWSMediasS3Name: !Ref AWSMediasS3Name
+        MediaBucketCloudFrontAlias: !Ref MediaBucketCloudFrontAlias
 
 Outputs:
   ECSHostSecurityGroup:
@@ -266,3 +266,8 @@ Outputs:
     Value: !GetAtt StrapiStack.Outputs.TaskArn
     Export:
       Name: !Sub "${AWS::StackName}-TaskDefinitionArn"
+  ApiUrl:
+    Description: Url of the deployed api
+    Value: !GetAtt CFStack.Outputs.ApiUrl
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiUrl"

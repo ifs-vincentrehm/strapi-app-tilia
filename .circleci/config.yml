@@ -386,7 +386,7 @@ workflows:
   workflow_build_develop:
     jobs:
       - job_deploy_in_dev_environment:
-          context:  Colivme-int
+          context:  Tilia-int
           filters:
             branches:
               only:
@@ -395,7 +395,7 @@ workflows:
   workflow_build_release:
     jobs:
       - job_deploy_in_release_environment:
-          context: Colivme-rls
+          context: Tilia-rls
           filters:
             branches:
               only:

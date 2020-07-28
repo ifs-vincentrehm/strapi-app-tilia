@@ -2,15 +2,22 @@
 
 const slugify = require('slugify');
 
+/**
+ * Read the documentation (https://strapi.io/documentation/v3.x/concepts/models.html#lifecycle-hooks)
+ * to customize this model
+ */
+
 module.exports = {
     lifecycles: {
-        beforeCreate: async model => {
-            if (model.name) {
-                model.slug = slugify(model.name).toLowerCase();
-            }
+        async beforeCreate(data) {
+          if (data.title) {
+            data.slug = slugify(data.title, {lower: true});
+          }
         },
-        beforeUpdate: async(params, model) => {
-            model.slug = slugify(model.name).toLowerCase();
-        }
-    }
+        async beforeUpdate(params, data) {
+          if (data.title) {
+            data.slug = slugify(data.title, {lower: true});
+          }
+        },
+      }
 };

@@ -9,15 +9,26 @@
     "timestamps": true
   },
   "attributes": {
-    "name": {
-      "type": "string"
+    "title": {
+      "type": "string",
+      "unique": true,
+      "required": true
     },
     "slug": {
-      "type": "string"
+      "type": "string",
+      "unique": true
     },
     "articles": {
       "via": "categories",
       "collection": "article"
+    },
+    "freemiums": {
+      "via": "categories",
+      "collection": "freemium"
+    },
+    "premiums": {
+      "via": "categories",
+      "collection": "premium"
     }
   }
 }

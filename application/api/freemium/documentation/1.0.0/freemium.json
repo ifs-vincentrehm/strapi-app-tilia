@@ -1,6 +1,6 @@
 {
   "paths": {
-    "/authors": {
+    "/freemiums": {
       "get": {
         "deprecated": false,
         "description": "",
@@ -12,7 +12,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Author"
+                    "$ref": "#/components/schemas/Freemium"
                   }
                 }
               }
@@ -51,7 +51,7 @@
         },
         "summary": "",
         "tags": [
-          "Author"
+          "Freemium"
         ],
         "parameters": [
           {
@@ -201,7 +201,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Author"
+                  "$ref": "#/components/schemas/Freemium"
                 }
               }
             }
@@ -239,7 +239,7 @@
         },
         "summary": "",
         "tags": [
-          "Author"
+          "Freemium"
         ],
         "requestBody": {
           "description": "",
@@ -247,14 +247,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewAuthor"
+                "$ref": "#/components/schemas/NewFreemium"
               }
             }
           }
         }
       }
     },
-    "/authors/count": {
+    "/freemiums/count": {
       "get": {
         "deprecated": false,
         "description": "",
@@ -306,12 +306,12 @@
         },
         "summary": "",
         "tags": [
-          "Author"
+          "Freemium"
         ],
         "parameters": []
       }
     },
-    "/authors/{id}": {
+    "/freemiums/{id}": {
       "get": {
         "deprecated": false,
         "description": "",
@@ -321,7 +321,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Author"
+                  "$ref": "#/components/schemas/Freemium"
                 }
               }
             }
@@ -359,7 +359,7 @@
         },
         "summary": "",
         "tags": [
-          "Author"
+          "Freemium"
         ],
         "parameters": [
           {
@@ -383,7 +383,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Author"
+                  "$ref": "#/components/schemas/Freemium"
                 }
               }
             }
@@ -421,7 +421,7 @@
         },
         "summary": "",
         "tags": [
-          "Author"
+          "Freemium"
         ],
         "requestBody": {
           "description": "",
@@ -429,7 +429,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewAuthor"
+                "$ref": "#/components/schemas/NewFreemium"
               }
             }
           }
@@ -495,7 +495,7 @@
         },
         "summary": "",
         "tags": [
-          "Author"
+          "Freemium"
         ],
         "parameters": [
           {
@@ -514,18 +514,26 @@
   },
   "components": {
     "schemas": {
-      "Author": {
+      "Freemium": {
         "required": [
-          "id"
+          "id",
+          "title",
+          "subtitle",
+          "image",
+          "picto",
+          "content"
         ],
         "properties": {
           "id": {
             "type": "string"
           },
-          "full_name": {
+          "title": {
             "type": "string"
           },
-          "avatar": {
+          "subtitle": {
+            "type": "string"
+          },
+          "image": {
             "required": [
               "id",
               "name",
@@ -583,20 +591,91 @@
               },
               "related": {
                 "type": "string"
+              },
+              "created_by": {
+                "type": "string"
+              },
+              "updated_by": {
+                "type": "string"
               }
             }
           },
-          "title": {
+          "picto": {
+            "required": [
+              "id",
+              "name",
+              "hash",
+              "mime",
+              "size",
+              "url",
+              "provider"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "alternativeText": {
+                "type": "string"
+              },
+              "caption": {
+                "type": "string"
+              },
+              "width": {
+                "type": "integer"
+              },
+              "height": {
+                "type": "integer"
+              },
+              "formats": {
+                "type": "object"
+              },
+              "hash": {
+                "type": "string"
+              },
+              "ext": {
+                "type": "string"
+              },
+              "mime": {
+                "type": "string"
+              },
+              "size": {
+                "type": "number"
+              },
+              "url": {
+                "type": "string"
+              },
+              "previewUrl": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "provider_metadata": {
+                "type": "object"
+              },
+              "related": {
+                "type": "string"
+              },
+              "created_by": {
+                "type": "string"
+              },
+              "updated_by": {
+                "type": "string"
+              }
+            }
+          },
+          "content": {
             "type": "string"
           },
-          "description": {
-            "type": "string"
-          },
-          "articles": {
+          "categories": {
             "type": "array",
             "items": {
               "required": [
-                "id"
+                "id",
+                "title"
               ],
               "properties": {
                 "id": {
@@ -605,48 +684,153 @@
                 "title": {
                   "type": "string"
                 },
-                "content": {
-                  "type": "string"
-                },
-                "image": {
-                  "type": "string"
-                },
-                "published_at": {
-                  "type": "string"
-                },
                 "slug": {
                   "type": "string"
                 },
-                "author": {
-                  "type": "string"
-                },
-                "categories": {
+                "articles": {
                   "type": "array",
                   "items": {
                     "type": "string"
                   }
+                },
+                "freemiums": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "premiums": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "created_by": {
+                  "type": "string"
+                },
+                "updated_by": {
+                  "type": "string"
                 }
+              }
+            }
+          },
+          "created_by": {
+            "required": [
+              "id",
+              "email"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "firstname": {
+                "type": "string"
+              },
+              "lastname": {
+                "type": "string"
+              },
+              "username": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "password": {
+                "type": "string"
+              },
+              "resetPasswordToken": {
+                "type": "string"
+              },
+              "registrationToken": {
+                "type": "string"
+              },
+              "isActive": {
+                "type": "boolean"
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "blocked": {
+                "type": "boolean"
+              }
+            }
+          },
+          "updated_by": {
+            "required": [
+              "id",
+              "email"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "firstname": {
+                "type": "string"
+              },
+              "lastname": {
+                "type": "string"
+              },
+              "username": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "password": {
+                "type": "string"
+              },
+              "resetPasswordToken": {
+                "type": "string"
+              },
+              "registrationToken": {
+                "type": "string"
+              },
+              "isActive": {
+                "type": "boolean"
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "blocked": {
+                "type": "boolean"
               }
             }
           }
         }
       },
-      "NewAuthor": {
+      "NewFreemium": {
+        "required": [
+          "title",
+          "subtitle",
+          "content"
+        ],
         "properties": {
-          "full_name": {
-            "type": "string"
-          },
           "title": {
             "type": "string"
           },
-          "description": {
+          "subtitle": {
             "type": "string"
           },
-          "articles": {
+          "content": {
+            "type": "string"
+          },
+          "categories": {
             "type": "array",
             "items": {
               "type": "string"
             }
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": "string"
           }
         }
       }
@@ -654,7 +838,7 @@
   },
   "tags": [
     {
-      "name": "Author"
+      "name": "Freemium"
     }
   ]
 }
