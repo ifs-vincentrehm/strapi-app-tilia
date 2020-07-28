@@ -39,8 +39,11 @@
       "dominant": true
     },
     "author": {
-      "via": "articles",
-      "model": "author"
+      "model": "author",
+      "via": "articles"
+    },
+    "published_at": {
+      "type": "date"
     }
   }
 }

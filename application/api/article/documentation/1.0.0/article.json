@@ -685,6 +685,9 @@
               }
             }
           },
+          "published_at": {
+            "type": "string"
+          },
           "created_by": {
             "required": [
               "id",
@@ -799,6 +802,9 @@
             }
           },
           "author": {
+            "type": "string"
+          },
+          "published_at": {
             "type": "string"
           },
           "created_by": {
