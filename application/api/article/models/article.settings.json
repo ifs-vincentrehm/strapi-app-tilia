@@ -37,6 +37,10 @@
       "collection": "category",
       "via": "articles",
       "dominant": true
+    },
+    "author": {
+      "via": "articles",
+      "model": "author"
     }
   }
 }

@@ -647,6 +647,44 @@
               }
             }
           },
+          "author": {
+            "required": [
+              "id",
+              "full_name",
+              "avatar",
+              "title",
+              "description"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "full_name": {
+                "type": "string"
+              },
+              "avatar": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "articles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "created_by": {
+                "type": "string"
+              },
+              "updated_by": {
+                "type": "string"
+              }
+            }
+          },
           "created_by": {
             "required": [
               "id",
@@ -759,6 +797,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "author": {
+            "type": "string"
           },
           "created_by": {
             "type": "string"

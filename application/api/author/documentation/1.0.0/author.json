@@ -1,6 +1,6 @@
 {
   "paths": {
-    "/categories": {
+    "/authors": {
       "get": {
         "deprecated": false,
         "description": "",
@@ -12,7 +12,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Category"
+                    "$ref": "#/components/schemas/Author"
                   }
                 }
               }
@@ -51,7 +51,7 @@
         },
         "summary": "",
         "tags": [
-          "Category"
+          "Author"
         ],
         "parameters": [
           {
@@ -201,7 +201,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Category"
+                  "$ref": "#/components/schemas/Author"
                 }
               }
             }
@@ -239,7 +239,7 @@
         },
         "summary": "",
         "tags": [
-          "Category"
+          "Author"
         ],
         "requestBody": {
           "description": "",
@@ -247,14 +247,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewCategory"
+                "$ref": "#/components/schemas/NewAuthor"
               }
             }
           }
         }
       }
     },
-    "/categories/count": {
+    "/authors/count": {
       "get": {
         "deprecated": false,
         "description": "",
@@ -306,12 +306,12 @@
         },
         "summary": "",
         "tags": [
-          "Category"
+          "Author"
         ],
         "parameters": []
       }
     },
-    "/categories/{id}": {
+    "/authors/{id}": {
       "get": {
         "deprecated": false,
         "description": "",
@@ -321,7 +321,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Category"
+                  "$ref": "#/components/schemas/Author"
                 }
               }
             }
@@ -359,7 +359,7 @@
         },
         "summary": "",
         "tags": [
-          "Category"
+          "Author"
         ],
         "parameters": [
           {
@@ -383,7 +383,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Category"
+                  "$ref": "#/components/schemas/Author"
                 }
               }
             }
@@ -421,7 +421,7 @@
         },
         "summary": "",
         "tags": [
-          "Category"
+          "Author"
         ],
         "requestBody": {
           "description": "",
@@ -429,7 +429,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewCategory"
+                "$ref": "#/components/schemas/NewAuthor"
               }
             }
           }
@@ -495,7 +495,7 @@
         },
         "summary": "",
         "tags": [
-          "Category"
+          "Author"
         ],
         "parameters": [
           {
@@ -514,19 +514,92 @@
   },
   "components": {
     "schemas": {
-      "Category": {
+      "Author": {
         "required": [
           "id",
-          "title"
+          "full_name",
+          "avatar",
+          "title",
+          "description"
         ],
         "properties": {
           "id": {
             "type": "string"
           },
+          "full_name": {
+            "type": "string"
+          },
+          "avatar": {
+            "required": [
+              "id",
+              "name",
+              "hash",
+              "mime",
+              "size",
+              "url",
+              "provider"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "alternativeText": {
+                "type": "string"
+              },
+              "caption": {
+                "type": "string"
+              },
+              "width": {
+                "type": "integer"
+              },
+              "height": {
+                "type": "integer"
+              },
+              "formats": {
+                "type": "object"
+              },
+              "hash": {
+                "type": "string"
+              },
+              "ext": {
+                "type": "string"
+              },
+              "mime": {
+                "type": "string"
+              },
+              "size": {
+                "type": "number"
+              },
+              "url": {
+                "type": "string"
+              },
+              "previewUrl": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "provider_metadata": {
+                "type": "object"
+              },
+              "related": {
+                "type": "string"
+              },
+              "created_by": {
+                "type": "string"
+              },
+              "updated_by": {
+                "type": "string"
+              }
+            }
+          },
           "title": {
             "type": "string"
           },
-          "slug": {
+          "description": {
             "type": "string"
           },
           "articles": {
@@ -564,96 +637,6 @@
                 },
                 "author": {
                   "type": "string"
-                },
-                "created_by": {
-                  "type": "string"
-                },
-                "updated_by": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "freemiums": {
-            "type": "array",
-            "items": {
-              "required": [
-                "id",
-                "title",
-                "subtitle",
-                "image",
-                "picto",
-                "content"
-              ],
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "title": {
-                  "type": "string"
-                },
-                "subtitle": {
-                  "type": "string"
-                },
-                "image": {
-                  "type": "string"
-                },
-                "picto": {
-                  "type": "string"
-                },
-                "content": {
-                  "type": "string"
-                },
-                "categories": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                "created_by": {
-                  "type": "string"
-                },
-                "updated_by": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "premiums": {
-            "type": "array",
-            "items": {
-              "required": [
-                "id",
-                "title",
-                "subtitle",
-                "image",
-                "picto",
-                "content"
-              ],
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "title": {
-                  "type": "string"
-                },
-                "subtitle": {
-                  "type": "string"
-                },
-                "image": {
-                  "type": "string"
-                },
-                "picto": {
-                  "type": "string"
-                },
-                "content": {
-                  "type": "string"
-                },
-                "categories": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
                 },
                 "created_by": {
                   "type": "string"
@@ -754,30 +737,23 @@
           }
         }
       },
-      "NewCategory": {
+      "NewAuthor": {
         "required": [
-          "title"
+          "full_name",
+          "title",
+          "description"
         ],
         "properties": {
+          "full_name": {
+            "type": "string"
+          },
           "title": {
             "type": "string"
           },
-          "slug": {
+          "description": {
             "type": "string"
           },
           "articles": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "freemiums": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "premiums": {
             "type": "array",
             "items": {
               "type": "string"
@@ -795,7 +771,7 @@
   },
   "tags": [
     {
-      "name": "Category"
+      "name": "Author"
     }
   ]
 }
