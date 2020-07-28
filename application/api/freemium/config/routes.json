@@ -1,0 +1,52 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/freemiums",
+      "handler": "freemium.find",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/freemiums/count",
+      "handler": "freemium.count",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/freemiums/:id",
+      "handler": "freemium.findOne",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/freemiums",
+      "handler": "freemium.create",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/freemiums/:id",
+      "handler": "freemium.update",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/freemiums/:id",
+      "handler": "freemium.delete",
+      "config": {
+        "policies": []
+      }
+    }
+  ]
+}
