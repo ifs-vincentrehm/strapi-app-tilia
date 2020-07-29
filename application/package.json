@@ -25,7 +25,7 @@
     "strapi-plugin-email": "3.1.1",
     "strapi-plugin-upload": "3.1.1",
     "strapi-plugin-users-permissions": "3.1.1",
-    "strapi-provider-upload-cloudinary": "^3.1.1",
+    "strapi-provider-upload-custom-aws-s3": "file:providers/strapi-provider-upload-custom-aws-s3",
     "strapi-utils": "3.1.1"
   },
   "author": {

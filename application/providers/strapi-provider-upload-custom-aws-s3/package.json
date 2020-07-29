@@ -1,0 +1,25 @@
+{
+    "name": "strapi-provider-upload-custom-aws-s3",
+    "version": "1.0.0",
+    "description": "custom provider to upload images to a private S3 bucket with IAM role",
+    "directories": {
+      "lib": "./lib"
+    },
+    "main": "./lib",
+    "dependencies": {
+      "aws-sdk": "^2.457.0",
+      "lodash": "^4.17.11"
+    },
+    "strapi": {
+      "isProvider": true
+    },
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Thomas Fouan",
+    "engines": {
+      "node": ">=10.10.0",
+      "npm": ">=6.0.0"
+    },
+    "license": "ISC"
+  }
